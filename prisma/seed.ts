@@ -29,6 +29,28 @@ async function main() {
     },
   });
 
+  await prisma.user.upsert({
+    where: { email: "talha@sadabademlak.com" },
+    update: {},
+    create: {
+      name: "Talha",
+      email: "talha@sadabademlak.com",
+      passwordHash: agentPassword,
+      role: "AGENT",
+    },
+  });
+
+  await prisma.user.upsert({
+    where: { email: "zahid@sadabademlak.com" },
+    update: {},
+    create: {
+      name: "Zahid",
+      email: "zahid@sadabademlak.com",
+      passwordHash: agentPassword,
+      role: "AGENT",
+    },
+  });
+
   console.log("Seed tamamlandı. Şifreleri ilk girişten sonra değiştirin.");
 }
 
