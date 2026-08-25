@@ -1,0 +1,174 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  AGENT
+}
+
+enum LeadStage {
+  YENI              // yeni gelen lead
+  GORUSULDU         // ilk temas kuruldu
+  GOSTERIM          // mülk gösterimi yapıldı
+  TEKLIF            // teklif aşamasında
+  KAPANDI_KAZANILDI // satış/kiralama tamamlandı
+  KAPANDI_KAYIP     // vazgeçti / başka yerden aldı
+}
+
+enum LeadSource {
+  REFERANS
+  SOSYAL_MEDYA
+  WEB_SITESI
+  PORTAL_ILAN   // sahibinden, hepsiemlak vb.
+  SOGUK_ARAMA
+  DIGER
+}
+
+enum ListingType {
+  SATILIK
+  KIRALIK
+}
+
+enum PropertyType {
+  KONUT
+  TICARI
+  ARSA
+}
+
+enum PropertyStatus {
+  AKTIF
+  REZERVE
+  SATILDI_KIRALANDI
+  PASIF
+}
+
+enum TaskStatus {
+  BEKLIYOR
+  TAMAMLANDI
+  IPTAL
+}
+
+model User {
+  id            String   @id @default(cuid())
+  name          String
+  email         String   @unique
+  passwordHash  String
+  role          Role     @default(AGENT)
+  createdAt     DateTime @default(now())
+
+  leads         Lead[]        @relation("AssignedAgent")
+  interactions  Interaction[]
+  tasks         Task[]        @relation("AssignedTasks")
+  properties    Property[]    @relation("ListingAgent")
+}
+
+model Lead {
+  id            String     @id @default(cuid())
+  name          String
+  phone         String
+  email         String?
+  budgetMin     Int?
+  budgetMax     Int?
+  listingType   ListingType
+  propertyType  PropertyType
+  preferredArea String?
+  source        LeadSource @default(DIGER)
+  stage         LeadStage  @default(YENI)
+
+  assignedAgentId String
+  assignedAgent   User   @relation("AssignedAgent", fields: [assignedAgentId], references: [id])
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  lastContactAt DateTime? // takip disiplini bunun üzerinden çalışıyor
+
+  interactions  Interaction[]
+  tasks         Task[]
+  matches       LeadPropertyMatch[]
+
+  @@index([assignedAgentId])
+  @@index([stage])
+}
+
+model Property {
+  id            String         @id @default(cuid())
+  title         String
+  address       String
+  district      String         // mahalle/bölge — eşleştirme için
+  area          Float          // m2
+  price         Int
+  listingType   ListingType
+  propertyType  PropertyType
+  status        PropertyStatus @default(AKTIF)
+  ownerName     String
+  ownerPhone    String
+  description   String?
+  photoUrls     String[]       @default([])
+
+  listingAgentId String
+  listingAgent   User   @relation("ListingAgent", fields: [listingAgentId], references: [id])
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  interactions  Interaction[]
+  matches       LeadPropertyMatch[]
+
+  @@index([district])
+  @@index([status])
+}
+
+// Lead <-> Property arasındaki otomatik/manuel eşleştirme + gösterim kaydı
+model LeadPropertyMatch {
+  id          String   @id @default(cuid())
+  leadId      String
+  lead        Lead     @relation(fields: [leadId], references: [id])
+  propertyId  String
+  property    Property @relation(fields: [propertyId], references: [id])
+  shownAt     DateTime? // gösterim yapıldıysa tarih
+  note        String?
+  createdAt   DateTime @default(now())
+
+  @@unique([leadId, propertyId])
+}
+
+// Her temas: arama, mesaj, gösterim notu — zaman damgalı geçmiş
+model Interaction {
+  id          String   @id @default(cuid())
+  type        String   // "arama" | "mesaj" | "gosterim" | "not"
+  content     String
+  createdAt   DateTime @default(now())
+
+  leadId      String?
+  lead        Lead?    @relation(fields: [leadId], references: [id])
+  propertyId  String?
+  property    Property? @relation(fields: [propertyId], references: [id])
+
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+}
+
+// Takip disiplinini kuran asıl mekanizma: atanmış, tarihli görevler
+model Task {
+  id          String     @id @default(cuid())
+  title       String
+  dueDate     DateTime
+  status      TaskStatus @default(BEKLIYOR)
+
+  leadId      String?
+  lead        Lead?      @relation(fields: [leadId], references: [id])
+
+  assignedToId String
+  assignedTo   User      @relation("AssignedTasks", fields: [assignedToId], references: [id])
+
+  createdAt   DateTime @default(now())
+
+  @@index([dueDate])
+  @@index([assignedToId])
+}
