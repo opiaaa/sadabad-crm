@@ -25,6 +25,7 @@ export default function Dashboard() {
             </li>
           ))}
         </ul>
+        <a href="/tasks" style={{ fontSize: 14 }}>Tüm görevleri gör →</a>
       </section>
 
       <section style={{ marginTop: 32 }}>
