@@ -53,6 +53,7 @@ export default function PropertiesPage() {
             <th>m²</th>
             <th>Fiyat</th>
             <th>Durum</th>
+            <th>Eklenme Tarihi</th>
             <th>İlan sahibi (danışman)</th>
           </tr>
         </thead>
@@ -64,6 +65,7 @@ export default function PropertiesPage() {
               <td>{p.area}</td>
               <td>{p.price.toLocaleString("tr-TR")} ₺</td>
               <td>{p.status}</td>
+              <td>{new Date(p.createdAt).toLocaleDateString("tr-TR")}</td>
               <td>{p.listingAgent?.name}</td>
             </tr>
           ))}
