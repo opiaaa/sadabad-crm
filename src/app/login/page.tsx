@@ -17,28 +17,33 @@ export default function LoginPage() {
   }
 
   return (
-    <div style={{ maxWidth: 360, margin: "80px auto", padding: 24, background: "#fff", borderRadius: 8 }}>
-      <h1 style={{ fontSize: 20 }}>Sadabad Emlak CRM</h1>
-      <form onSubmit={handleSubmit}>
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          style={{ width: "100%", padding: 8, margin: "8px 0" }}
-        />
-        <input
-          type="password"
-          placeholder="Şifre"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          style={{ width: "100%", padding: 8, margin: "8px 0" }}
-        />
-        {error && <p style={{ color: "red", fontSize: 14 }}>{error}</p>}
-        <button type="submit" style={{ width: "100%", padding: 10, marginTop: 8 }}>
-          Giriş Yap
-        </button>
-      </form>
+    <div style={{ maxWidth: 380, margin: "80px auto", padding: 16 }}>
+      <div className="card">
+        <h1 style={{ fontSize: 22, textAlign: "center", marginBottom: 4 }}>SADABAD EMLAK</h1>
+        <p style={{ textAlign: "center", color: "var(--color-text-muted)", fontSize: 13, marginTop: 0, marginBottom: 24 }}>
+          Kurumsal CRM Girişi
+        </p>
+        <form onSubmit={handleSubmit}>
+          <input
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            style={{ width: "100%", margin: "8px 0" }}
+          />
+          <input
+            type="password"
+            placeholder="Şifre"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            style={{ width: "100%", margin: "8px 0" }}
+          />
+          {error && <p style={{ color: "#b91c1c", fontSize: 14 }}>{error}</p>}
+          <button type="submit" style={{ width: "100%", marginTop: 8 }}>
+            Giriş Yap
+          </button>
+        </form>
+      </div>
     </div>
   );
 }

@@ -57,7 +57,7 @@ export default function LeadsPage() {
         <button type="submit">Ekle</button>
       </form>
 
-      <table width="100%" cellPadding={8} style={{ background: "#fff" }}>
+      <table width="100%" cellPadding={8}>
         <thead>
           <tr style={{ textAlign: "left" }}>
             <th>Ad</th>
