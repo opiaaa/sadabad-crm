@@ -12,6 +12,7 @@ const STAGES: Record<string, string> = {
 
 export default function LeadsPage() {
   const [leads, setLeads] = useState<any[]>([]);
+  const [search, setSearch] = useState("");
   const [form, setForm] = useState({
     name: "",
     phone: "",
@@ -21,13 +22,19 @@ export default function LeadsPage() {
   });
 
   function load() {
-    fetch("/api/leads").then((r) => r.json()).then(setLeads);
+    fetch("/api/leads")
+      .then((r) => r.json())
+      .then((data) => setLeads(Array.isArray(data) ? data : []));
   }
   useEffect(load, []);
 
   async function addLead(e: React.FormEvent) {
     e.preventDefault();
-    await fetch("/api/leads", { method: "POST", body: JSON.stringify(form) });
+    const res = await fetch("/api/leads", { method: "POST", body: JSON.stringify(form) });
+    const data = await res.json();
+    if (data?.duplicateWarning) {
+      alert("Bu telefon numarasıyla zaten bir lead kayıtlı.");
+    }
     setForm({ ...form, name: "", phone: "", preferredArea: "" });
     load();
   }
@@ -36,6 +43,13 @@ export default function LeadsPage() {
     await fetch(`/api/leads/${id}`, { method: "PATCH", body: JSON.stringify({ stage }) });
     load();
   }
+
+  const q = search.trim().toLowerCase();
+  const filteredLeads = q
+    ? leads.filter((l) =>
+        [l.name, l.phone, l.preferredArea].some((f) => (f || "").toLowerCase().includes(q))
+      )
+    : leads;
 
   return (
     <div style={{ maxWidth: 900, margin: "40px auto", padding: 16 }}>
@@ -57,6 +71,13 @@ export default function LeadsPage() {
         <button type="submit">Ekle</button>
       </form>
 
+      <input
+        placeholder="Ad, telefon veya bölgede ara..."
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        style={{ width: "100%", marginBottom: 12 }}
+      />
+
       <table width="100%" cellPadding={8}>
         <thead>
           <tr style={{ textAlign: "left" }}>
@@ -69,7 +90,12 @@ export default function LeadsPage() {
           </tr>
         </thead>
         <tbody>
-          {leads.map((l) => (
+          {filteredLeads.length === 0 && (
+            <tr>
+              <td colSpan={6}>Eşleşen lead yok.</td>
+            </tr>
+          )}
+          {filteredLeads.map((l) => (
             <tr key={l.id}>
               <td>{l.name}</td>
               <td>{l.phone}</td>

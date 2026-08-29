@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import UserMenu from "./UserMenu";
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard" },
@@ -15,17 +16,20 @@ export default function Header() {
   return (
     <header className="site-header">
       <span className="logo">SADABAD EMLAK</span>
-      <nav>
-        {NAV_ITEMS.map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            className={pathname === item.href ? "active" : ""}
-          >
-            {item.label}
-          </Link>
-        ))}
-      </nav>
+      <div className="site-header-right">
+        <nav>
+          {NAV_ITEMS.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={pathname === item.href ? "active" : ""}
+            >
+              {item.label}
+            </Link>
+          ))}
+        </nav>
+        <UserMenu />
+      </div>
     </header>
   );
 }

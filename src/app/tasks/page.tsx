@@ -57,13 +57,14 @@ export default function TasksPage() {
             <th>Son tarih</th>
             <th>Başlık</th>
             <th>Lead</th>
+            <th>Atanan</th>
             <th></th>
           </tr>
         </thead>
         <tbody>
           {tasks.length === 0 && (
             <tr>
-              <td colSpan={4}>Bekleyen görev yok.</td>
+              <td colSpan={5}>Bekleyen görev yok.</td>
             </tr>
           )}
           {tasks.map((t) => (
@@ -71,6 +72,7 @@ export default function TasksPage() {
               <td>{new Date(t.dueDate).toLocaleDateString("tr-TR")}</td>
               <td>{t.title}</td>
               <td>{t.lead ? `${t.lead.name} — ${t.lead.phone}` : "-"}</td>
+              <td>{t.assignedTo?.name || "-"}</td>
               <td>
                 <button onClick={() => completeTask(t.id)}>Tamamlandı</button>
               </td>

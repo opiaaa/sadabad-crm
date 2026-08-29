@@ -50,9 +50,11 @@ export async function POST(req: Request) {
       ? parsed.data.assignedAgentId
       : user.id;
 
+  const existing = await prisma.lead.findFirst({ where: { phone: parsed.data.phone } });
+
   const lead = await prisma.lead.create({
     data: { ...parsed.data, assignedAgentId, lastContactAt: new Date() },
   });
 
-  return NextResponse.json(lead, { status: 201 });
+  return NextResponse.json({ lead, duplicateWarning: !!existing }, { status: 201 });
 }

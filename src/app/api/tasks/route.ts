@@ -21,7 +21,10 @@ export async function GET() {
   const tasks = await prisma.task.findMany({
     where: { ...where, status: "BEKLIYOR" },
     orderBy: { dueDate: "asc" },
-    include: { lead: { select: { name: true, phone: true } } },
+    include: {
+      lead: { select: { name: true, phone: true } },
+      assignedTo: { select: { name: true } },
+    },
   });
 
   return NextResponse.json(tasks);
