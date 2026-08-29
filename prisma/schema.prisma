@@ -81,6 +81,10 @@ model Lead {
   source        LeadSource @default(DIGER)
   stage         LeadStage  @default(YENI)
 
+  listingNumber String?
+  description   String?
+  isActive      Boolean    @default(true)
+
   assignedAgentId String
   assignedAgent   User   @relation("AssignedAgent", fields: [assignedAgentId], references: [id])
 
@@ -99,6 +103,7 @@ model Lead {
 model Property {
   id            String         @id @default(cuid())
   title         String
+  listingNumber String?
   address       String
   district      String         // mahalle/bölge — eşleştirme için
   area          Float          // m2
@@ -158,6 +163,7 @@ model Interaction {
 model Task {
   id          String     @id @default(cuid())
   title       String
+  description String?
   dueDate     DateTime
   status      TaskStatus @default(BEKLIYOR)
 

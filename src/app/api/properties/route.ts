@@ -6,6 +6,7 @@ import { z } from "zod";
 
 const propertySchema = z.object({
   title: z.string().min(1),
+  listingNumber: z.string().optional(),
   address: z.string().min(1),
   district: z.string().min(1),
   area: z.number(),

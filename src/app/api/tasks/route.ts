@@ -6,6 +6,7 @@ import { z } from "zod";
 
 const taskSchema = z.object({
   title: z.string().min(1),
+  description: z.string().optional(),
   dueDate: z.string(), // ISO string
   leadId: z.string().optional(),
   assignedToId: z.string().optional(), // sadece admin başkasına atayabilir
@@ -47,6 +48,7 @@ export async function POST(req: Request) {
   const task = await prisma.task.create({
     data: {
       title: parsed.data.title,
+      description: parsed.data.description,
       dueDate: new Date(parsed.data.dueDate),
       leadId: parsed.data.leadId,
       assignedToId,

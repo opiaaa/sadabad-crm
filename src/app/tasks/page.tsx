@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 export default function TasksPage() {
   const [tasks, setTasks] = useState<any[]>([]);
   const [leads, setLeads] = useState<any[]>([]);
-  const [form, setForm] = useState({ title: "", dueDate: "", leadId: "" });
+  const [form, setForm] = useState({ title: "", description: "", dueDate: "", leadId: "" });
 
   function load() {
     fetch("/api/tasks")
@@ -22,16 +22,28 @@ export default function TasksPage() {
       method: "POST",
       body: JSON.stringify({
         title: form.title,
+        description: form.description || undefined,
         dueDate: new Date(form.dueDate).toISOString(),
         leadId: form.leadId || undefined,
       }),
     });
-    setForm({ title: "", dueDate: "", leadId: "" });
+    setForm({ title: "", description: "", dueDate: "", leadId: "" });
     load();
   }
 
   async function completeTask(id: string) {
-    await fetch(`/api/tasks/${id}`, { method: "PATCH" });
+    await fetch(`/api/tasks/${id}`, { method: "PATCH", body: JSON.stringify({ status: "TAMAMLANDI" }) });
+    load();
+  }
+
+  async function cancelTask(id: string) {
+    await fetch(`/api/tasks/${id}`, { method: "PATCH", body: JSON.stringify({ status: "IPTAL" }) });
+    load();
+  }
+
+  async function deleteTask(id: string) {
+    if (!confirm("Bu görevi silmek istediğinize emin misiniz? Bu işlem geri alınamaz.")) return;
+    await fetch(`/api/tasks/${id}`, { method: "DELETE" });
     load();
   }
 
@@ -48,6 +60,12 @@ export default function TasksPage() {
             <option key={l.id} value={l.id}>{l.name} — {l.phone}</option>
           ))}
         </select>
+        <textarea
+          placeholder="Açıklama (opsiyonel)"
+          value={form.description}
+          onChange={(e) => setForm({ ...form, description: e.target.value })}
+          style={{ width: "100%", minHeight: 50 }}
+        />
         <button type="submit">Ekle</button>
       </form>
 
@@ -70,11 +88,18 @@ export default function TasksPage() {
           {tasks.map((t) => (
             <tr key={t.id}>
               <td>{new Date(t.dueDate).toLocaleDateString("tr-TR")}</td>
-              <td>{t.title}</td>
+              <td>
+                {t.title}
+                {t.description && (
+                  <div style={{ fontSize: 12, color: "var(--color-text-muted)" }}>{t.description}</div>
+                )}
+              </td>
               <td>{t.lead ? `${t.lead.name} — ${t.lead.phone}` : "-"}</td>
               <td>{t.assignedTo?.name || "-"}</td>
-              <td>
-                <button onClick={() => completeTask(t.id)}>Tamamlandı</button>
+              <td style={{ whiteSpace: "nowrap" }}>
+                <button onClick={() => completeTask(t.id)} style={{ marginRight: 6 }}>Tamamlandı</button>
+                <button onClick={() => cancelTask(t.id)} style={{ marginRight: 6 }}>İptal Et</button>
+                <button onClick={() => deleteTask(t.id)}>Sil</button>
               </td>
             </tr>
           ))}

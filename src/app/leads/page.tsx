@@ -19,7 +19,11 @@ export default function LeadsPage() {
     listingType: "SATILIK",
     propertyType: "KONUT",
     preferredArea: "",
+    listingNumber: "",
+    description: "",
   });
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState<any>({});
 
   function load() {
     fetch("/api/leads")
@@ -35,7 +39,7 @@ export default function LeadsPage() {
     if (data?.duplicateWarning) {
       alert("Bu telefon numarasıyla zaten bir lead kayıtlı.");
     }
-    setForm({ ...form, name: "", phone: "", preferredArea: "" });
+    setForm({ ...form, name: "", phone: "", preferredArea: "", listingNumber: "", description: "" });
     load();
   }
 
@@ -44,20 +48,55 @@ export default function LeadsPage() {
     load();
   }
 
+  function startEdit(l: any) {
+    setEditingId(l.id);
+    setEditForm({
+      name: l.name,
+      phone: l.phone,
+      preferredArea: l.preferredArea || "",
+      listingNumber: l.listingNumber || "",
+      description: l.description || "",
+    });
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+    setEditForm({});
+  }
+
+  async function saveEdit(id: string) {
+    await fetch(`/api/leads/${id}`, { method: "PATCH", body: JSON.stringify(editForm) });
+    setEditingId(null);
+    setEditForm({});
+    load();
+  }
+
+  async function toggleActive(l: any) {
+    await fetch(`/api/leads/${l.id}`, { method: "PATCH", body: JSON.stringify({ isActive: !l.isActive }) });
+    load();
+  }
+
+  async function deleteLead(id: string) {
+    if (!confirm("Bu lead'i silmek istediğinize emin misiniz? Bu işlem geri alınamaz.")) return;
+    await fetch(`/api/leads/${id}`, { method: "DELETE" });
+    load();
+  }
+
   const q = search.trim().toLowerCase();
   const filteredLeads = q
     ? leads.filter((l) =>
-        [l.name, l.phone, l.preferredArea].some((f) => (f || "").toLowerCase().includes(q))
+        [l.name, l.phone, l.preferredArea, l.listingNumber].some((f) => (f || "").toLowerCase().includes(q))
       )
     : leads;
 
   return (
-    <div style={{ maxWidth: 900, margin: "40px auto", padding: 16 }}>
+    <div style={{ maxWidth: 1000, margin: "40px auto", padding: 16 }}>
       <h1>Lead'ler</h1>
 
-      <form onSubmit={addLead} style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 24 }}>
+      <form onSubmit={addLead} style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
         <input placeholder="Ad Soyad" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
         <input placeholder="Telefon" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} required />
+        <input placeholder="İlan No" value={form.listingNumber} onChange={(e) => setForm({ ...form, listingNumber: e.target.value })} style={{ width: 110 }} />
         <input placeholder="Bölge" value={form.preferredArea} onChange={(e) => setForm({ ...form, preferredArea: e.target.value })} />
         <select value={form.listingType} onChange={(e) => setForm({ ...form, listingType: e.target.value })}>
           <option value="SATILIK">Satılık</option>
@@ -68,11 +107,17 @@ export default function LeadsPage() {
           <option value="TICARI">Ticari</option>
           <option value="ARSA">Arsa</option>
         </select>
+        <textarea
+          placeholder="Açıklama"
+          value={form.description}
+          onChange={(e) => setForm({ ...form, description: e.target.value })}
+          style={{ width: "100%", minHeight: 50 }}
+        />
         <button type="submit">Ekle</button>
       </form>
 
       <input
-        placeholder="Ad, telefon veya bölgede ara..."
+        placeholder="Ad, telefon, ilan no veya bölgede ara..."
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         style={{ width: "100%", marginBottom: 12 }}
@@ -83,34 +128,84 @@ export default function LeadsPage() {
           <tr style={{ textAlign: "left" }}>
             <th>Ad</th>
             <th>Telefon</th>
+            <th>İlan No</th>
             <th>Bölge</th>
             <th>Aşama</th>
             <th>Son temas</th>
             <th>Danışman</th>
+            <th>İşlemler</th>
           </tr>
         </thead>
         <tbody>
           {filteredLeads.length === 0 && (
             <tr>
-              <td colSpan={6}>Eşleşen lead yok.</td>
+              <td colSpan={8}>Eşleşen lead yok.</td>
             </tr>
           )}
-          {filteredLeads.map((l) => (
-            <tr key={l.id}>
-              <td>{l.name}</td>
-              <td>{l.phone}</td>
-              <td>{l.preferredArea || "-"}</td>
-              <td>
-                <select value={l.stage} onChange={(e) => changeStage(l.id, e.target.value)}>
-                  {Object.entries(STAGES).map(([k, v]) => (
-                    <option key={k} value={k}>{v}</option>
-                  ))}
-                </select>
-              </td>
-              <td>{l.lastContactAt ? new Date(l.lastContactAt).toLocaleDateString("tr-TR") : "-"}</td>
-              <td>{l.assignedAgent?.name}</td>
-            </tr>
-          ))}
+          {filteredLeads.map((l) => {
+            const isEditing = editingId === l.id;
+            return (
+              <tr key={l.id} style={{ opacity: l.isActive ? 1 : 0.5 }}>
+                {isEditing ? (
+                  <>
+                    <td>
+                      <input value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} style={{ width: "100%" }} />
+                    </td>
+                    <td>
+                      <input value={editForm.phone} onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })} style={{ width: "100%" }} />
+                    </td>
+                    <td>
+                      <input value={editForm.listingNumber} onChange={(e) => setEditForm({ ...editForm, listingNumber: e.target.value })} style={{ width: "100%" }} />
+                    </td>
+                    <td>
+                      <input value={editForm.preferredArea} onChange={(e) => setEditForm({ ...editForm, preferredArea: e.target.value })} style={{ width: "100%" }} />
+                    </td>
+                    <td colSpan={3}>
+                      <textarea
+                        placeholder="Açıklama"
+                        value={editForm.description}
+                        onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                        style={{ width: "100%" }}
+                      />
+                    </td>
+                    <td style={{ whiteSpace: "nowrap" }}>
+                      <button onClick={() => saveEdit(l.id)} style={{ marginRight: 6 }}>Kaydet</button>
+                      <button onClick={cancelEdit}>Vazgeç</button>
+                    </td>
+                  </>
+                ) : (
+                  <>
+                    <td>
+                      {l.name}
+                      {!l.isActive && <span style={{ fontSize: 11, marginLeft: 6, color: "var(--color-text-muted)" }}>(pasif)</span>}
+                      {l.description && (
+                        <div style={{ fontSize: 12, color: "var(--color-text-muted)" }}>{l.description}</div>
+                      )}
+                    </td>
+                    <td>{l.phone}</td>
+                    <td>{l.listingNumber || "-"}</td>
+                    <td>{l.preferredArea || "-"}</td>
+                    <td>
+                      <select value={l.stage} onChange={(e) => changeStage(l.id, e.target.value)}>
+                        {Object.entries(STAGES).map(([k, v]) => (
+                          <option key={k} value={k}>{v}</option>
+                        ))}
+                      </select>
+                    </td>
+                    <td>{l.lastContactAt ? new Date(l.lastContactAt).toLocaleDateString("tr-TR") : "-"}</td>
+                    <td>{l.assignedAgent?.name}</td>
+                    <td style={{ whiteSpace: "nowrap" }}>
+                      <button onClick={() => startEdit(l)} style={{ marginRight: 6 }}>Düzenle</button>
+                      <button onClick={() => toggleActive(l)} style={{ marginRight: 6 }}>
+                        {l.isActive ? "Pasife Çek" : "Aktif Et"}
+                      </button>
+                      <button onClick={() => deleteLead(l.id)}>Sil</button>
+                    </td>
+                  </>
+                )}
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>

@@ -15,6 +15,8 @@ const leadSchema = z.object({
   preferredArea: z.string().optional(),
   source: z.enum(["REFERANS", "SOSYAL_MEDYA", "WEB_SITESI", "PORTAL_ILAN", "SOGUK_ARAMA", "DIGER"]).optional(),
   assignedAgentId: z.string().optional(), // sadece admin başka birine atayabilir
+  listingNumber: z.string().optional(),
+  description: z.string().optional(),
 });
 
 export async function GET() {
