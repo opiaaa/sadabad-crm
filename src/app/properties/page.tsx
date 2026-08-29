@@ -108,6 +108,8 @@ export default function PropertiesPage() {
             <th>Bölge</th>
             <th>m²</th>
             <th>Fiyat</th>
+            <th>Sahibi</th>
+            <th>Sahibi Tel</th>
             <th>Durum</th>
             <th>Eklenme Tarihi</th>
             <th>İlan sahibi (danışman)</th>
@@ -136,6 +138,12 @@ export default function PropertiesPage() {
                     <td>
                       <input value={editForm.price} onChange={(e) => setEditForm({ ...editForm, price: e.target.value })} style={{ width: 80 }} />
                     </td>
+                    <td>
+                      <input value={editForm.ownerName} onChange={(e) => setEditForm({ ...editForm, ownerName: e.target.value })} style={{ width: "100%" }} />
+                    </td>
+                    <td>
+                      <input value={editForm.ownerPhone} onChange={(e) => setEditForm({ ...editForm, ownerPhone: e.target.value })} style={{ width: "100%" }} />
+                    </td>
                     <td colSpan={3}>
                       <textarea
                         placeholder="Açıklama"
@@ -161,6 +169,8 @@ export default function PropertiesPage() {
                     <td>{p.district}</td>
                     <td>{p.area}</td>
                     <td>{p.price.toLocaleString("tr-TR")} ₺</td>
+                    <td>{p.ownerName}</td>
+                    <td>{p.ownerPhone}</td>
                     <td>{p.status}</td>
                     <td>{new Date(p.createdAt).toLocaleDateString("tr-TR")}</td>
                     <td>{p.listingAgent?.name}</td>
