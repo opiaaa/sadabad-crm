@@ -66,7 +66,7 @@ export default function TaleplerPage() {
   }
 
   async function markContactedToday(id: string) {
-    await fetch(`/api/talepler/${id}`, { method: "PATCH", body: JSON.stringify({ lastContactAt: new Date().toISOString() }) });
+    await fetch(`/api/talepler/${id}`, { method: "PATCH", body: JSON.stringify({ markContacted: true }) });
     load();
   }
 

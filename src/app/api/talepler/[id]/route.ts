@@ -21,9 +21,13 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
   const body = await req.json();
 
+  // Son temas güncellemesi güven gerektirir — istemci saatine değil, sunucu saatine göre damgala
+  const { markContacted, ...rest } = body;
+  const data = markContacted ? { ...rest, lastContactAt: new Date() } : rest;
+
   const updated = await prisma.talep.update({
     where: { id: params.id },
-    data: body,
+    data,
   });
 
   return NextResponse.json(updated);
