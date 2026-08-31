@@ -15,6 +15,11 @@ const SONUC_LABELS: Record<string, string> = {
   VAZGECTI: "Vazgeçti",
 };
 
+const ROL_LABELS: Record<string, string> = {
+  ALICI: "Alıcı",
+  SATICI: "Satıcı",
+};
+
 function formatBudget(min?: number | null, max?: number | null) {
   if (!min && !max) return "-";
   if (min && max) return `${min.toLocaleString("tr-TR")} - ${max.toLocaleString("tr-TR")} ₺`;
@@ -31,6 +36,7 @@ export default function TaleplerPage() {
     ilce: "",
     mahalle: "",
     mulkTipi: "DAIRE",
+    rol: "ALICI",
     budgetMin: "",
     budgetMax: "",
     description: "",
@@ -76,6 +82,7 @@ export default function TaleplerPage() {
       adSoyad: t.adSoyad,
       phone: t.phone,
       listingType: t.listingType,
+      rol: t.rol,
       il: t.il,
       ilce: t.ilce,
       mahalle: t.mahalle || "",
@@ -131,6 +138,11 @@ export default function TaleplerPage() {
             <option key={k} value={k}>{v}</option>
           ))}
         </select>
+        <select value={form.rol} onChange={(e) => setForm({ ...form, rol: e.target.value })}>
+          {Object.entries(ROL_LABELS).map(([k, v]) => (
+            <option key={k} value={k}>{v}</option>
+          ))}
+        </select>
         <input placeholder="Bütçe min" value={form.budgetMin} onChange={(e) => setForm({ ...form, budgetMin: e.target.value })} style={{ width: 100 }} />
         <input placeholder="Bütçe max" value={form.budgetMax} onChange={(e) => setForm({ ...form, budgetMax: e.target.value })} style={{ width: 100 }} />
         <textarea
@@ -150,6 +162,7 @@ export default function TaleplerPage() {
             <th>Emlak Tipi</th>
             <th>Konum</th>
             <th>Gayrimenkul Tipi</th>
+            <th>Rol</th>
             <th>Bütçe</th>
             <th>Son Temas</th>
             <th>Sonuç</th>
@@ -159,7 +172,7 @@ export default function TaleplerPage() {
         <tbody>
           {talepler.length === 0 && (
             <tr>
-              <td colSpan={9}>Kayıtlı talep yok.</td>
+              <td colSpan={10}>Kayıtlı talep yok.</td>
             </tr>
           )}
           {talepler.map((t) => {
@@ -193,6 +206,13 @@ export default function TaleplerPage() {
                       </select>
                     </td>
                     <td>
+                      <select value={editForm.rol} onChange={(e) => setEditForm({ ...editForm, rol: e.target.value })}>
+                        {Object.entries(ROL_LABELS).map(([k, v]) => (
+                          <option key={k} value={k}>{v}</option>
+                        ))}
+                      </select>
+                    </td>
+                    <td>
                       <input placeholder="min" value={editForm.budgetMin} onChange={(e) => setEditForm({ ...editForm, budgetMin: e.target.value })} style={{ width: 70, marginBottom: 4 }} />
                       <input placeholder="max" value={editForm.budgetMax} onChange={(e) => setEditForm({ ...editForm, budgetMax: e.target.value })} style={{ width: 70 }} />
                     </td>
@@ -221,6 +241,7 @@ export default function TaleplerPage() {
                     <td>{t.listingType === "SATILIK" ? "Satılık" : "Kiralık"}</td>
                     <td>{[t.il, t.ilce, t.mahalle].filter(Boolean).join(" / ")}</td>
                     <td>{MULK_TIPI_LABELS[t.mulkTipi]}</td>
+                    <td>{ROL_LABELS[t.rol]}</td>
                     <td>{formatBudget(t.budgetMin, t.budgetMax)}</td>
                     <td>
                       {t.lastContactAt ? new Date(t.lastContactAt).toLocaleDateString("tr-TR") : "-"}

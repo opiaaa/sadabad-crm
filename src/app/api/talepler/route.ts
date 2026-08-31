@@ -8,6 +8,7 @@ const talepSchema = z.object({
   adSoyad: z.string().min(1),
   phone: z.string().min(1),
   listingType: z.enum(["SATILIK", "KIRALIK"]),
+  rol: z.enum(["ALICI", "SATICI"]),
   il: z.string().min(1),
   ilce: z.string().min(1),
   mahalle: z.string().optional(),

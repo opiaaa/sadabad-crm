@@ -68,6 +68,11 @@ enum TalepSonuc {
   VAZGECTI
 }
 
+enum TalepRol {
+  ALICI
+  SATICI
+}
+
 model User {
   id            String   @id @default(cuid())
   name          String
@@ -200,6 +205,7 @@ model Talep {
   adSoyad       String
   phone         String
   listingType   ListingType
+  rol           TalepRol
   il            String
   ilce          String
   mahalle       String?
