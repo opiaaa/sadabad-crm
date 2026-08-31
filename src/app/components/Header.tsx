@@ -6,6 +6,7 @@ import UserMenu from "./UserMenu";
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/leads", label: "Lead'ler" },
+  { href: "/talepler", label: "Talepler" },
   { href: "/properties", label: "Portföy" },
   { href: "/tasks", label: "Görevler" },
 ];

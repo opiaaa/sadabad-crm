@@ -54,6 +54,20 @@ enum TaskStatus {
   IPTAL
 }
 
+enum TalepMulkTipi {
+  DAIRE
+  ISYERI
+  OFIS
+  IS_HANI
+  DEPO
+}
+
+enum TalepSonuc {
+  BEKLIYOR
+  KARSILANDI
+  VAZGECTI
+}
+
 model User {
   id            String   @id @default(cuid())
   name          String
@@ -66,6 +80,7 @@ model User {
   interactions  Interaction[]
   tasks         Task[]        @relation("AssignedTasks")
   properties    Property[]    @relation("ListingAgent")
+  talepler      Talep[]       @relation("AssignedTalep")
 }
 
 model Lead {
@@ -177,4 +192,30 @@ model Task {
 
   @@index([dueDate])
   @@index([assignedToId])
+}
+
+// Müşteri talepleri — Lead'den bağımsız, yapılandırılmış "ne arıyor" kaydı
+model Talep {
+  id            String        @id @default(cuid())
+  adSoyad       String
+  phone         String
+  listingType   ListingType
+  il            String
+  ilce          String
+  mahalle       String?
+  mulkTipi      TalepMulkTipi
+  budgetMin     Int?
+  budgetMax     Int?
+  description   String?
+  lastContactAt DateTime?
+  sonuc         TalepSonuc    @default(BEKLIYOR)
+
+  assignedAgentId String
+  assignedAgent   User   @relation("AssignedTalep", fields: [assignedAgentId], references: [id])
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([assignedAgentId])
+  @@index([sonuc])
 }
