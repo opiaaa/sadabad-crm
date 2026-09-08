@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 
 export default function PropertiesPage() {
   const [properties, setProperties] = useState<any[]>([]);
+  const [leads, setLeads] = useState<any[]>([]);
   const [form, setForm] = useState({
     title: "",
     listingNumber: "",
@@ -15,6 +16,7 @@ export default function PropertiesPage() {
     ownerName: "",
     ownerPhone: "",
     description: "",
+    leadId: "",
   });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<any>({});
@@ -24,15 +26,35 @@ export default function PropertiesPage() {
       .then((r) => r.json())
       .then((data) => setProperties(Array.isArray(data) ? data : []));
   }
-  useEffect(load, []);
+  useEffect(() => {
+    load();
+    fetch("/api/leads")
+      .then((r) => r.json())
+      .then((data) => setLeads(Array.isArray(data) ? data : []));
+  }, []);
+
+  function selectLeadForForm(leadId: string) {
+    const selectedLead = leads.find((l) => l.id === leadId);
+    setForm({
+      ...form,
+      leadId,
+      ownerName: selectedLead ? selectedLead.name : form.ownerName,
+      ownerPhone: selectedLead ? selectedLead.phone : form.ownerPhone,
+    });
+  }
 
   async function addProperty(e: React.FormEvent) {
     e.preventDefault();
     await fetch("/api/properties", {
       method: "POST",
-      body: JSON.stringify({ ...form, area: Number(form.area), price: Number(form.price) }),
+      body: JSON.stringify({
+        ...form,
+        area: Number(form.area),
+        price: Number(form.price),
+        leadId: form.leadId || undefined,
+      }),
     });
-    setForm({ ...form, title: "", listingNumber: "", address: "", district: "", area: "", price: "", ownerName: "", ownerPhone: "", description: "" });
+    setForm({ ...form, title: "", listingNumber: "", address: "", district: "", area: "", price: "", ownerName: "", ownerPhone: "", description: "", leadId: "" });
     load();
   }
 
@@ -48,6 +70,7 @@ export default function PropertiesPage() {
       ownerName: p.ownerName,
       ownerPhone: p.ownerPhone,
       description: p.description || "",
+      leadId: p.leadId || "",
     });
   }
 
@@ -59,7 +82,12 @@ export default function PropertiesPage() {
   async function saveEdit(id: string) {
     await fetch(`/api/properties/${id}`, {
       method: "PATCH",
-      body: JSON.stringify({ ...editForm, area: Number(editForm.area), price: Number(editForm.price) }),
+      body: JSON.stringify({
+        ...editForm,
+        area: Number(editForm.area),
+        price: Number(editForm.price),
+        leadId: editForm.leadId || null,
+      }),
     });
     setEditingId(null);
     setEditForm({});
@@ -83,6 +111,12 @@ export default function PropertiesPage() {
       <h1>Portföy</h1>
 
       <form onSubmit={addProperty} style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 24 }}>
+        <select value={form.leadId} onChange={(e) => selectLeadForForm(e.target.value)}>
+          <option value="">Lead seç (opsiyonel)</option>
+          {leads.map((l) => (
+            <option key={l.id} value={l.id}>{l.name} — {l.phone}</option>
+          ))}
+        </select>
         <input placeholder="Başlık" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required />
         <input placeholder="İlan No" value={form.listingNumber} onChange={(e) => setForm({ ...form, listingNumber: e.target.value })} style={{ width: 110 }} />
         <input placeholder="Adres" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} required />
@@ -110,6 +144,7 @@ export default function PropertiesPage() {
             <th>Fiyat</th>
             <th>Sahibi</th>
             <th>Sahibi Tel</th>
+            <th>Lead</th>
             <th>Durum</th>
             <th>Eklenme Tarihi</th>
             <th>İlan sahibi (danışman)</th>
@@ -144,6 +179,14 @@ export default function PropertiesPage() {
                     <td>
                       <input value={editForm.ownerPhone} onChange={(e) => setEditForm({ ...editForm, ownerPhone: e.target.value })} style={{ width: "100%" }} />
                     </td>
+                    <td>
+                      <select value={editForm.leadId} onChange={(e) => setEditForm({ ...editForm, leadId: e.target.value })}>
+                        <option value="">Lead yok</option>
+                        {leads.map((l) => (
+                          <option key={l.id} value={l.id}>{l.name} — {l.phone}</option>
+                        ))}
+                      </select>
+                    </td>
                     <td colSpan={3}>
                       <textarea
                         placeholder="Açıklama"
@@ -171,6 +214,7 @@ export default function PropertiesPage() {
                     <td>{p.price.toLocaleString("tr-TR")} ₺</td>
                     <td>{p.ownerName}</td>
                     <td>{p.ownerPhone}</td>
+                    <td>{p.lead ? p.lead.name : "-"}</td>
                     <td>{p.status}</td>
                     <td>{new Date(p.createdAt).toLocaleDateString("tr-TR")}</td>
                     <td>{p.listingAgent?.name}</td>

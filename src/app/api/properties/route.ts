@@ -16,6 +16,7 @@ const propertySchema = z.object({
   ownerName: z.string().min(1),
   ownerPhone: z.string().min(1),
   description: z.string().optional(),
+  leadId: z.string().optional(), // ilişkili lead kaydı (opsiyonel)
 });
 
 export async function GET(req: Request) {
@@ -33,7 +34,10 @@ export async function GET(req: Request) {
       ...(status ? { status: status as any } : {}),
     },
     orderBy: { updatedAt: "desc" },
-    include: { listingAgent: { select: { name: true } } },
+    include: {
+      listingAgent: { select: { name: true } },
+      lead: { select: { id: true, name: true, phone: true } },
+    },
   });
 
   return NextResponse.json(properties);

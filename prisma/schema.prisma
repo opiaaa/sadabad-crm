@@ -116,6 +116,7 @@ model Lead {
   tasks         Task[]
   matches       LeadPropertyMatch[]
   talepler      Talep[]
+  properties    Property[]
 
   @@index([assignedAgentId])
   @@index([stage])
@@ -136,6 +137,9 @@ model Property {
   ownerPhone    String
   description   String?
   photoUrls     String[]       @default([])
+
+  leadId        String?
+  lead          Lead?  @relation(fields: [leadId], references: [id])
 
   listingAgentId String
   listingAgent   User   @relation("ListingAgent", fields: [listingAgentId], references: [id])
