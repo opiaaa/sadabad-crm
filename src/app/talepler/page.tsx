@@ -321,7 +321,19 @@ export default function TaleplerPage() {
                     <td>
                       {t.adSoyad}
                       {t.description && (
-                        <div style={{ fontSize: 12, color: "var(--color-text-muted)" }}>{t.description}</div>
+                        <div
+                          title={t.description}
+                          style={{
+                            fontSize: 12,
+                            color: "var(--color-text-muted)",
+                            maxWidth: 160,
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {t.description}
+                        </div>
                       )}
                     </td>
                     <td>{t.phone}</td>
