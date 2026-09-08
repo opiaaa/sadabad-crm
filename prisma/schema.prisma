@@ -115,6 +115,7 @@ model Lead {
   interactions  Interaction[]
   tasks         Task[]
   matches       LeadPropertyMatch[]
+  talepler      Talep[]
 
   @@index([assignedAgentId])
   @@index([stage])
@@ -215,6 +216,9 @@ model Talep {
   description   String?
   lastContactAt DateTime?
   sonuc         TalepSonuc    @default(BEKLIYOR)
+
+  leadId        String?
+  lead          Lead?  @relation(fields: [leadId], references: [id])
 
   assignedAgentId String
   assignedAgent   User   @relation("AssignedTalep", fields: [assignedAgentId], references: [id])

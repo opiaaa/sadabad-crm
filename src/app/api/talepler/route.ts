@@ -17,6 +17,7 @@ const talepSchema = z.object({
   budgetMax: z.number().optional(),
   description: z.string().optional(),
   assignedAgentId: z.string().optional(), // sadece admin başka birine atayabilir
+  leadId: z.string().optional(), // ilişkili lead kaydı (opsiyonel)
 });
 
 export async function GET() {
@@ -26,7 +27,10 @@ export async function GET() {
   // Talep havuzu paylaşımlı — herkes tüm talepleri görür (portföy ile tutarlı)
   const talepler = await prisma.talep.findMany({
     orderBy: { updatedAt: "desc" },
-    include: { assignedAgent: { select: { name: true } } },
+    include: {
+      assignedAgent: { select: { name: true } },
+      lead: { select: { id: true, name: true, phone: true } },
+    },
   });
 
   return NextResponse.json(talepler);

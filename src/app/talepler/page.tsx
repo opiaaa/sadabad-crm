@@ -28,6 +28,7 @@ function formatBudget(min?: number | null, max?: number | null) {
 
 export default function TaleplerPage() {
   const [talepler, setTalepler] = useState<any[]>([]);
+  const [leads, setLeads] = useState<any[]>([]);
   const [form, setForm] = useState({
     adSoyad: "",
     phone: "",
@@ -40,6 +41,7 @@ export default function TaleplerPage() {
     budgetMin: "",
     budgetMax: "",
     description: "",
+    leadId: "",
   });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<any>({});
@@ -49,7 +51,22 @@ export default function TaleplerPage() {
       .then((r) => r.json())
       .then((data) => setTalepler(Array.isArray(data) ? data : []));
   }
-  useEffect(load, []);
+  useEffect(() => {
+    load();
+    fetch("/api/leads")
+      .then((r) => r.json())
+      .then((data) => setLeads(Array.isArray(data) ? data : []));
+  }, []);
+
+  function selectLeadForForm(leadId: string) {
+    const selectedLead = leads.find((l) => l.id === leadId);
+    setForm({
+      ...form,
+      leadId,
+      adSoyad: selectedLead ? selectedLead.name : form.adSoyad,
+      phone: selectedLead ? selectedLead.phone : form.phone,
+    });
+  }
 
   async function addTalep(e: React.FormEvent) {
     e.preventDefault();
@@ -60,9 +77,10 @@ export default function TaleplerPage() {
         mahalle: form.mahalle || undefined,
         budgetMin: form.budgetMin ? Number(form.budgetMin) : undefined,
         budgetMax: form.budgetMax ? Number(form.budgetMax) : undefined,
+        leadId: form.leadId || undefined,
       }),
     });
-    setForm({ ...form, adSoyad: "", phone: "", il: "", ilce: "", mahalle: "", budgetMin: "", budgetMax: "", description: "" });
+    setForm({ ...form, adSoyad: "", phone: "", il: "", ilce: "", mahalle: "", budgetMin: "", budgetMax: "", description: "", leadId: "" });
     load();
   }
 
@@ -90,6 +108,7 @@ export default function TaleplerPage() {
       budgetMin: t.budgetMin != null ? String(t.budgetMin) : "",
       budgetMax: t.budgetMax != null ? String(t.budgetMax) : "",
       description: t.description || "",
+      leadId: t.leadId || "",
     });
   }
 
@@ -106,6 +125,7 @@ export default function TaleplerPage() {
         mahalle: editForm.mahalle || undefined,
         budgetMin: editForm.budgetMin ? Number(editForm.budgetMin) : null,
         budgetMax: editForm.budgetMax ? Number(editForm.budgetMax) : null,
+        leadId: editForm.leadId || null,
       }),
     });
     setEditingId(null);
@@ -124,6 +144,12 @@ export default function TaleplerPage() {
       <h1>Talepler</h1>
 
       <form onSubmit={addTalep} style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 24 }}>
+        <select value={form.leadId} onChange={(e) => selectLeadForForm(e.target.value)}>
+          <option value="">Lead seç (opsiyonel)</option>
+          {leads.map((l) => (
+            <option key={l.id} value={l.id}>{l.name} — {l.phone}</option>
+          ))}
+        </select>
         <input placeholder="Ad Soyad" value={form.adSoyad} onChange={(e) => setForm({ ...form, adSoyad: e.target.value })} required />
         <input placeholder="Telefon" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} required />
         <select value={form.listingType} onChange={(e) => setForm({ ...form, listingType: e.target.value })}>
@@ -159,6 +185,7 @@ export default function TaleplerPage() {
           <tr style={{ textAlign: "left" }}>
             <th>Ad Soyad</th>
             <th>Telefon</th>
+            <th>Lead</th>
             <th>Emlak Tipi</th>
             <th>Konum</th>
             <th>Gayrimenkul Tipi</th>
@@ -172,7 +199,7 @@ export default function TaleplerPage() {
         <tbody>
           {talepler.length === 0 && (
             <tr>
-              <td colSpan={10}>Kayıtlı talep yok.</td>
+              <td colSpan={11}>Kayıtlı talep yok.</td>
             </tr>
           )}
           {talepler.map((t) => {
@@ -186,6 +213,14 @@ export default function TaleplerPage() {
                     </td>
                     <td>
                       <input value={editForm.phone} onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })} style={{ width: "100%" }} />
+                    </td>
+                    <td>
+                      <select value={editForm.leadId} onChange={(e) => setEditForm({ ...editForm, leadId: e.target.value })}>
+                        <option value="">Lead yok</option>
+                        {leads.map((l) => (
+                          <option key={l.id} value={l.id}>{l.name} — {l.phone}</option>
+                        ))}
+                      </select>
                     </td>
                     <td>
                       <select value={editForm.listingType} onChange={(e) => setEditForm({ ...editForm, listingType: e.target.value })}>
@@ -238,6 +273,7 @@ export default function TaleplerPage() {
                       )}
                     </td>
                     <td>{t.phone}</td>
+                    <td>{t.lead ? t.lead.name : "-"}</td>
                     <td>{t.listingType === "SATILIK" ? "Satılık" : "Kiralık"}</td>
                     <td>{[t.il, t.ilce, t.mahalle].filter(Boolean).join(" / ")}</td>
                     <td>{MULK_TIPI_LABELS[t.mulkTipi]}</td>
