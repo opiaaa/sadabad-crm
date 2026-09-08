@@ -326,10 +326,10 @@ export default function TaleplerPage() {
                           style={{
                             fontSize: 12,
                             color: "var(--color-text-muted)",
-                            maxWidth: 160,
+                            lineHeight: 1.4,
+                            maxHeight: "2.8em",
+                            minWidth: 180,
                             overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
                           }}
                         >
                           {t.description}
