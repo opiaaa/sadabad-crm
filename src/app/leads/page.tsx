@@ -82,10 +82,10 @@ export default function LeadsPage() {
     load();
   }
 
-  const q = search.trim().toLowerCase();
+  const q = search.trim().toLocaleLowerCase("tr");
   const filteredLeads = q
     ? leads.filter((l) =>
-        [l.name, l.phone, l.preferredArea, l.listingNumber].some((f) => (f || "").toLowerCase().includes(q))
+        [l.name, l.phone, l.preferredArea, l.listingNumber].some((f) => (f || "").toLocaleLowerCase("tr").includes(q))
       )
     : leads;
 

@@ -29,6 +29,7 @@ function formatBudget(min?: number | null, max?: number | null) {
 export default function TaleplerPage() {
   const [talepler, setTalepler] = useState<any[]>([]);
   const [leads, setLeads] = useState<any[]>([]);
+  const [search, setSearch] = useState("");
   const [form, setForm] = useState({
     adSoyad: "",
     phone: "",
@@ -139,8 +140,15 @@ export default function TaleplerPage() {
     load();
   }
 
+  const q = search.trim().toLocaleLowerCase("tr");
+  const filteredTalepler = q
+    ? talepler.filter((t) =>
+        [t.adSoyad, t.phone, t.il, t.ilce, t.mahalle].some((f) => (f || "").toLocaleLowerCase("tr").includes(q))
+      )
+    : talepler;
+
   // Vazgeçilen talepler pasif sayılır — liste altına iner, soluk görünür
-  const sortedTalepler = [...talepler].sort(
+  const sortedTalepler = [...filteredTalepler].sort(
     (a, b) => (a.sonuc === "VAZGECTI" ? 1 : 0) - (b.sonuc === "VAZGECTI" ? 1 : 0)
   );
 
@@ -185,6 +193,13 @@ export default function TaleplerPage() {
         <button type="submit">Ekle</button>
       </form>
 
+      <input
+        placeholder="Ad, telefon, il, ilçe veya mahallede ara..."
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        style={{ width: "100%", marginBottom: 12 }}
+      />
+
       <table width="100%" cellPadding={8}>
         <thead>
           <tr style={{ textAlign: "left" }}>
@@ -202,9 +217,9 @@ export default function TaleplerPage() {
           </tr>
         </thead>
         <tbody>
-          {talepler.length === 0 && (
+          {sortedTalepler.length === 0 && (
             <tr>
-              <td colSpan={11}>Kayıtlı talep yok.</td>
+              <td colSpan={11}>Eşleşen talep yok.</td>
             </tr>
           )}
           {sortedTalepler.map((t) => {

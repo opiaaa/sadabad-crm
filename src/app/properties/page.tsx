@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 export default function PropertiesPage() {
   const [properties, setProperties] = useState<any[]>([]);
   const [leads, setLeads] = useState<any[]>([]);
+  const [search, setSearch] = useState("");
   const [form, setForm] = useState({
     title: "",
     listingNumber: "",
@@ -106,8 +107,15 @@ export default function PropertiesPage() {
     load();
   }
 
+  const q = search.trim().toLocaleLowerCase("tr");
+  const filteredProperties = q
+    ? properties.filter((p) =>
+        [p.title, p.listingNumber, p.district, p.ownerName, p.ownerPhone].some((f) => (f || "").toLocaleLowerCase("tr").includes(q))
+      )
+    : properties;
+
   // Pasif ilanlar liste altına iner
-  const sortedProperties = [...properties].sort(
+  const sortedProperties = [...filteredProperties].sort(
     (a, b) => (a.status === "PASIF" ? 1 : 0) - (b.status === "PASIF" ? 1 : 0)
   );
 
@@ -139,6 +147,13 @@ export default function PropertiesPage() {
         <button type="submit">Ekle</button>
       </form>
 
+      <input
+        placeholder="Başlık, ilan no, bölge, sahibi veya telefonda ara..."
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        style={{ width: "100%", marginBottom: 12 }}
+      />
+
       <table width="100%" cellPadding={8}>
         <thead>
           <tr style={{ textAlign: "left" }}>
@@ -157,6 +172,11 @@ export default function PropertiesPage() {
           </tr>
         </thead>
         <tbody>
+          {sortedProperties.length === 0 && (
+            <tr>
+              <td colSpan={12}>Eşleşen ilan yok.</td>
+            </tr>
+          )}
           {sortedProperties.map((p) => {
             const isEditing = editingId === p.id;
             return (
