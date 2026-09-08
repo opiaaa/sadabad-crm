@@ -106,6 +106,11 @@ export default function PropertiesPage() {
     load();
   }
 
+  // Pasif ilanlar liste altına iner
+  const sortedProperties = [...properties].sort(
+    (a, b) => (a.status === "PASIF" ? 1 : 0) - (b.status === "PASIF" ? 1 : 0)
+  );
+
   return (
     <div style={{ maxWidth: 1100, margin: "40px auto", padding: 16 }}>
       <h1>Portföy</h1>
@@ -152,7 +157,7 @@ export default function PropertiesPage() {
           </tr>
         </thead>
         <tbody>
-          {properties.map((p) => {
+          {sortedProperties.map((p) => {
             const isEditing = editingId === p.id;
             return (
               <tr key={p.id} style={{ opacity: p.status === "PASIF" ? 0.5 : 1 }}>

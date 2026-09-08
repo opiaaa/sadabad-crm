@@ -139,6 +139,11 @@ export default function TaleplerPage() {
     load();
   }
 
+  // Vazgeçilen talepler pasif sayılır — liste altına iner, soluk görünür
+  const sortedTalepler = [...talepler].sort(
+    (a, b) => (a.sonuc === "VAZGECTI" ? 1 : 0) - (b.sonuc === "VAZGECTI" ? 1 : 0)
+  );
+
   return (
     <div style={{ maxWidth: 1200, margin: "40px auto", padding: 16 }}>
       <h1>Talepler</h1>
@@ -202,10 +207,10 @@ export default function TaleplerPage() {
               <td colSpan={11}>Kayıtlı talep yok.</td>
             </tr>
           )}
-          {talepler.map((t) => {
+          {sortedTalepler.map((t) => {
             const isEditing = editingId === t.id;
             return (
-              <tr key={t.id}>
+              <tr key={t.id} style={{ opacity: t.sonuc === "VAZGECTI" ? 0.5 : 1 }}>
                 {isEditing ? (
                   <>
                     <td>
