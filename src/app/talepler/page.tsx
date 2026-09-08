@@ -156,40 +156,72 @@ export default function TaleplerPage() {
     <div style={{ maxWidth: 1200, margin: "40px auto", padding: 16 }}>
       <h1>Talepler</h1>
 
-      <form onSubmit={addTalep} style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 24 }}>
-        <select value={form.leadId} onChange={(e) => selectLeadForForm(e.target.value)}>
-          <option value="">Lead seç (opsiyonel)</option>
-          {leads.map((l) => (
-            <option key={l.id} value={l.id}>{l.name} — {l.phone}</option>
-          ))}
-        </select>
-        <input placeholder="Ad Soyad" value={form.adSoyad} onChange={(e) => setForm({ ...form, adSoyad: e.target.value })} required />
-        <input placeholder="Telefon" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} required />
-        <select value={form.listingType} onChange={(e) => setForm({ ...form, listingType: e.target.value })}>
-          <option value="SATILIK">Satılık</option>
-          <option value="KIRALIK">Kiralık</option>
-        </select>
-        <input placeholder="İl" value={form.il} onChange={(e) => setForm({ ...form, il: e.target.value })} style={{ width: 100 }} required />
-        <input placeholder="İlçe" value={form.ilce} onChange={(e) => setForm({ ...form, ilce: e.target.value })} style={{ width: 100 }} required />
-        <input placeholder="Mahalle (opsiyonel)" value={form.mahalle} onChange={(e) => setForm({ ...form, mahalle: e.target.value })} />
-        <select value={form.mulkTipi} onChange={(e) => setForm({ ...form, mulkTipi: e.target.value })}>
-          {Object.entries(MULK_TIPI_LABELS).map(([k, v]) => (
-            <option key={k} value={k}>{v}</option>
-          ))}
-        </select>
-        <select value={form.rol} onChange={(e) => setForm({ ...form, rol: e.target.value })}>
-          {Object.entries(ROL_LABELS).map(([k, v]) => (
-            <option key={k} value={k}>{v}</option>
-          ))}
-        </select>
-        <input placeholder="Bütçe min" value={form.budgetMin} onChange={(e) => setForm({ ...form, budgetMin: e.target.value })} style={{ width: 100 }} />
-        <input placeholder="Bütçe max" value={form.budgetMax} onChange={(e) => setForm({ ...form, budgetMax: e.target.value })} style={{ width: 100 }} />
-        <textarea
-          placeholder="Açıklama"
-          value={form.description}
-          onChange={(e) => setForm({ ...form, description: e.target.value })}
-          style={{ width: "100%", minHeight: 50 }}
-        />
+      <form onSubmit={addTalep} className="card" style={{ marginBottom: 24 }}>
+        <div className="form-section">
+          <label className="form-section-label">Lead Bağlantısı</label>
+          <select value={form.leadId} onChange={(e) => selectLeadForForm(e.target.value)} style={{ width: "100%" }}>
+            <option value="">Lead seç (opsiyonel)</option>
+            {leads.map((l) => (
+              <option key={l.id} value={l.id}>{l.name} — {l.phone}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="form-section">
+          <label className="form-section-label">Kişi Bilgileri</label>
+          <div className="form-grid">
+            <input placeholder="Ad Soyad" value={form.adSoyad} onChange={(e) => setForm({ ...form, adSoyad: e.target.value })} required />
+            <input placeholder="Telefon" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} required />
+          </div>
+        </div>
+
+        <div className="form-section">
+          <label className="form-section-label">Talep Detayı</label>
+          <div className="form-grid">
+            <select value={form.listingType} onChange={(e) => setForm({ ...form, listingType: e.target.value })}>
+              <option value="SATILIK">Satılık</option>
+              <option value="KIRALIK">Kiralık</option>
+            </select>
+            <select value={form.mulkTipi} onChange={(e) => setForm({ ...form, mulkTipi: e.target.value })}>
+              {Object.entries(MULK_TIPI_LABELS).map(([k, v]) => (
+                <option key={k} value={k}>{v}</option>
+              ))}
+            </select>
+            <select value={form.rol} onChange={(e) => setForm({ ...form, rol: e.target.value })}>
+              {Object.entries(ROL_LABELS).map(([k, v]) => (
+                <option key={k} value={k}>{v}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div className="form-section">
+          <label className="form-section-label">Konum</label>
+          <div className="form-grid">
+            <input placeholder="İl" value={form.il} onChange={(e) => setForm({ ...form, il: e.target.value })} required />
+            <input placeholder="İlçe" value={form.ilce} onChange={(e) => setForm({ ...form, ilce: e.target.value })} required />
+            <input placeholder="Mahalle (opsiyonel)" value={form.mahalle} onChange={(e) => setForm({ ...form, mahalle: e.target.value })} />
+          </div>
+        </div>
+
+        <div className="form-section">
+          <label className="form-section-label">Bütçe</label>
+          <div className="form-grid">
+            <input placeholder="Bütçe min" value={form.budgetMin} onChange={(e) => setForm({ ...form, budgetMin: e.target.value })} />
+            <input placeholder="Bütçe max" value={form.budgetMax} onChange={(e) => setForm({ ...form, budgetMax: e.target.value })} />
+          </div>
+        </div>
+
+        <div className="form-section">
+          <label className="form-section-label">Açıklama</label>
+          <textarea
+            placeholder="Açıklama (opsiyonel)"
+            value={form.description}
+            onChange={(e) => setForm({ ...form, description: e.target.value })}
+            style={{ width: "100%", minHeight: 60 }}
+          />
+        </div>
+
         <button type="submit">Ekle</button>
       </form>
 

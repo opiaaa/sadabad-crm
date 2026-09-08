@@ -129,6 +129,32 @@ a:hover {
   padding: 32px;
 }
 
+/* ---- Gruplu formlar (ekleme formları) ---- */
+.form-section {
+  margin-bottom: 20px;
+}
+.form-section:last-of-type {
+  margin-bottom: 20px;
+}
+.form-section-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--color-text-muted);
+  margin-bottom: 8px;
+}
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px;
+}
+.form-grid input,
+.form-grid select {
+  width: 100%;
+}
+
 /* ---- Butonlar ---- */
 button {
   background: var(--color-accent);
