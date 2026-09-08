@@ -23,11 +23,8 @@ export async function GET() {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Yetkisiz" }, { status: 401 });
 
-  const user = session.user as any;
-  const where = user.role === "ADMIN" ? {} : { assignedAgentId: user.id };
-
+  // Talep havuzu paylaşımlı — herkes tüm talepleri görür (portföy ile tutarlı)
   const talepler = await prisma.talep.findMany({
-    where,
     orderBy: { updatedAt: "desc" },
     include: { assignedAgent: { select: { name: true } } },
   });
