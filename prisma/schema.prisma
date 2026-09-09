@@ -81,6 +81,10 @@ model User {
   role          Role     @default(AGENT)
   createdAt     DateTime @default(now())
 
+  // Brute-force koruması: art arda hatalı denemeler geçici kilit uygular
+  failedLoginAttempts Int       @default(0)
+  lockedUntil         DateTime?
+
   leads         Lead[]        @relation("AssignedAgent")
   interactions  Interaction[]
   tasks         Task[]        @relation("AssignedTasks")
