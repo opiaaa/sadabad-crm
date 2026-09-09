@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { showToast } from "../components/toast";
 
 const STAGES: Record<string, string> = {
@@ -9,6 +9,13 @@ const STAGES: Record<string, string> = {
   TEKLIF: "Teklif",
   KAPANDI_KAZANILDI: "Kazanıldı",
   KAPANDI_KAYIP: "Kaybedildi",
+};
+
+const INTERACTION_TYPE_LABELS: Record<string, string> = {
+  arama: "Arama",
+  mesaj: "Mesaj",
+  gosterim: "Gösterim",
+  not: "Not",
 };
 
 export default function LeadsPage() {
@@ -26,6 +33,10 @@ export default function LeadsPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<any>({});
   const [loading, setLoading] = useState(true);
+  const [historyOpenId, setHistoryOpenId] = useState<string | null>(null);
+  const [interactionsByLead, setInteractionsByLead] = useState<Record<string, any[]>>({});
+  const [historyLoading, setHistoryLoading] = useState<Record<string, boolean>>({});
+  const [newInteraction, setNewInteraction] = useState({ type: "arama", content: "" });
 
   function load() {
     fetch("/api/leads")
@@ -96,6 +107,39 @@ export default function LeadsPage() {
       return;
     }
     showToast(l.isActive ? "Lead pasife çekildi." : "Lead aktife çekildi.");
+    load();
+  }
+
+  function toggleHistory(leadId: string) {
+    if (historyOpenId === leadId) {
+      setHistoryOpenId(null);
+      return;
+    }
+    setHistoryOpenId(leadId);
+    setNewInteraction({ type: "arama", content: "" });
+    if (!interactionsByLead[leadId]) {
+      setHistoryLoading((h) => ({ ...h, [leadId]: true }));
+      fetch(`/api/interactions?leadId=${leadId}`)
+        .then((r) => r.json())
+        .then((data) => setInteractionsByLead((m) => ({ ...m, [leadId]: Array.isArray(data) ? data : [] })))
+        .finally(() => setHistoryLoading((h) => ({ ...h, [leadId]: false })));
+    }
+  }
+
+  async function addInteraction(leadId: string, e: React.FormEvent) {
+    e.preventDefault();
+    const res = await fetch("/api/interactions", {
+      method: "POST",
+      body: JSON.stringify({ leadId, type: newInteraction.type, content: newInteraction.content }),
+    });
+    if (!res.ok) {
+      showToast("Kayıt eklenemedi.", "error");
+      return;
+    }
+    const created = await res.json();
+    showToast("Temas kaydedildi.");
+    setInteractionsByLead((m) => ({ ...m, [leadId]: [created, ...(m[leadId] || [])] }));
+    setNewInteraction({ type: "arama", content: "" });
     load();
   }
 
@@ -177,8 +221,10 @@ export default function LeadsPage() {
           )}
           {filteredLeads.map((l) => {
             const isEditing = editingId === l.id;
+            const historyOpen = historyOpenId === l.id;
             return (
-              <tr key={l.id} style={{ opacity: l.isActive ? 1 : 0.5 }}>
+              <Fragment key={l.id}>
+              <tr style={{ opacity: l.isActive ? 1 : 0.5 }}>
                 {isEditing ? (
                   <>
                     <td>
@@ -229,6 +275,9 @@ export default function LeadsPage() {
                     <td>{l.assignedAgent?.name}</td>
                     <td style={{ whiteSpace: "nowrap" }}>
                       <button onClick={() => startEdit(l)} style={{ marginRight: 6 }}>Düzenle</button>
+                      <button onClick={() => toggleHistory(l.id)} style={{ marginRight: 6 }}>
+                        {historyOpen ? "Geçmişi Gizle" : "Geçmiş"}
+                      </button>
                       <button onClick={() => toggleActive(l)} style={{ marginRight: 6 }}>
                         {l.isActive ? "Pasife Çek" : "Aktif Et"}
                       </button>
@@ -237,6 +286,55 @@ export default function LeadsPage() {
                   </>
                 )}
               </tr>
+              {historyOpen && !isEditing && (
+                <tr>
+                  <td colSpan={8} style={{ background: "#faf8f2", padding: 14 }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                      <div className="form-section-label">Temas Geçmişi</div>
+
+                      {historyLoading[l.id] && <div className="loading-text">Yükleniyor...</div>}
+                      {!historyLoading[l.id] && (interactionsByLead[l.id] || []).length === 0 && (
+                        <div style={{ fontSize: 13, color: "var(--color-text-muted)" }}>Henüz kayıt yok.</div>
+                      )}
+                      {!historyLoading[l.id] &&
+                        (interactionsByLead[l.id] || []).map((i) => (
+                          <div key={i.id} style={{ fontSize: 13, borderBottom: "1px solid var(--color-border)", paddingBottom: 8 }}>
+                            <div>
+                              <strong>{INTERACTION_TYPE_LABELS[i.type] || i.type}</strong>
+                              <span style={{ color: "var(--color-text-muted)", marginLeft: 8 }}>
+                                {new Date(i.createdAt).toLocaleString("tr-TR")} — {i.user?.name}
+                              </span>
+                            </div>
+                            <div>{i.content}</div>
+                          </div>
+                        ))}
+
+                      <form
+                        onSubmit={(e) => addInteraction(l.id, e)}
+                        style={{ display: "flex", gap: 8, alignItems: "flex-start", marginTop: 4, flexWrap: "wrap" }}
+                      >
+                        <select
+                          value={newInteraction.type}
+                          onChange={(e) => setNewInteraction({ ...newInteraction, type: e.target.value })}
+                        >
+                          {Object.entries(INTERACTION_TYPE_LABELS).map(([k, v]) => (
+                            <option key={k} value={k}>{v}</option>
+                          ))}
+                        </select>
+                        <input
+                          placeholder="Ne konuşuldu / not..."
+                          value={newInteraction.content}
+                          onChange={(e) => setNewInteraction({ ...newInteraction, content: e.target.value })}
+                          style={{ flex: 1, minWidth: 200 }}
+                          required
+                        />
+                        <button type="submit">Ekle</button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+              )}
+              </Fragment>
             );
           })}
         </tbody>
