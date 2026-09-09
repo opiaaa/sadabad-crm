@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 
 export default function PropertiesPage() {
   const [properties, setProperties] = useState<any[]>([]);
@@ -21,6 +21,7 @@ export default function PropertiesPage() {
   });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<any>({});
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   function load() {
     fetch("/api/properties")
@@ -158,61 +159,93 @@ export default function PropertiesPage() {
         <thead>
           <tr style={{ textAlign: "left" }}>
             <th>Başlık</th>
-            <th>İlan No</th>
             <th>Bölge</th>
             <th>m²</th>
             <th>Fiyat</th>
             <th>Sahibi</th>
-            <th>Sahibi Tel</th>
-            <th>Lead</th>
             <th>Durum</th>
-            <th>Eklenme Tarihi</th>
-            <th>İlan sahibi (danışman)</th>
             <th>İşlemler</th>
           </tr>
         </thead>
         <tbody>
           {sortedProperties.length === 0 && (
             <tr>
-              <td colSpan={12}>Eşleşen ilan yok.</td>
+              <td colSpan={7}>Eşleşen ilan yok.</td>
             </tr>
           )}
           {sortedProperties.map((p) => {
             const isEditing = editingId === p.id;
+            const isExpanded = expandedId === p.id;
             return (
-              <tr key={p.id} style={{ opacity: p.status === "PASIF" ? 0.5 : 1 }}>
-                {isEditing ? (
-                  <>
-                    <td>
-                      <input value={editForm.title} onChange={(e) => setEditForm({ ...editForm, title: e.target.value })} style={{ width: "100%" }} />
-                    </td>
-                    <td>
-                      <input value={editForm.listingNumber} onChange={(e) => setEditForm({ ...editForm, listingNumber: e.target.value })} style={{ width: "100%" }} />
-                    </td>
-                    <td>
-                      <input value={editForm.district} onChange={(e) => setEditForm({ ...editForm, district: e.target.value })} style={{ width: "100%" }} />
-                    </td>
-                    <td>
-                      <input value={editForm.area} onChange={(e) => setEditForm({ ...editForm, area: e.target.value })} style={{ width: 60 }} />
-                    </td>
-                    <td>
-                      <input value={editForm.price} onChange={(e) => setEditForm({ ...editForm, price: e.target.value })} style={{ width: 80 }} />
-                    </td>
-                    <td>
-                      <input value={editForm.ownerName} onChange={(e) => setEditForm({ ...editForm, ownerName: e.target.value })} style={{ width: "100%" }} />
-                    </td>
-                    <td>
-                      <input value={editForm.ownerPhone} onChange={(e) => setEditForm({ ...editForm, ownerPhone: e.target.value })} style={{ width: "100%" }} />
-                    </td>
-                    <td>
-                      <select value={editForm.leadId} onChange={(e) => setEditForm({ ...editForm, leadId: e.target.value })}>
-                        <option value="">Lead yok</option>
-                        {leads.map((l) => (
-                          <option key={l.id} value={l.id}>{l.name} — {l.phone}</option>
-                        ))}
-                      </select>
-                    </td>
-                    <td colSpan={3}>
+              <Fragment key={p.id}>
+                <tr style={{ opacity: p.status === "PASIF" ? 0.5 : 1 }}>
+                  {isEditing ? (
+                    <>
+                      <td>
+                        <input value={editForm.title} onChange={(e) => setEditForm({ ...editForm, title: e.target.value })} style={{ width: "100%" }} />
+                      </td>
+                      <td>
+                        <input value={editForm.district} onChange={(e) => setEditForm({ ...editForm, district: e.target.value })} style={{ width: "100%" }} />
+                      </td>
+                      <td>
+                        <input value={editForm.area} onChange={(e) => setEditForm({ ...editForm, area: e.target.value })} style={{ width: 60 }} />
+                      </td>
+                      <td>
+                        <input value={editForm.price} onChange={(e) => setEditForm({ ...editForm, price: e.target.value })} style={{ width: 80 }} />
+                      </td>
+                      <td>
+                        <input value={editForm.ownerName} onChange={(e) => setEditForm({ ...editForm, ownerName: e.target.value })} style={{ width: "100%" }} />
+                      </td>
+                      <td colSpan={2}>
+                        <button onClick={() => saveEdit(p.id)} style={{ marginRight: 6 }}>Kaydet</button>
+                        <button onClick={cancelEdit}>Vazgeç</button>
+                      </td>
+                    </>
+                  ) : (
+                    <>
+                      <td>
+                        {p.title}
+                        {p.description && (
+                          <div
+                            title={p.description}
+                            style={{ fontSize: 12, color: "var(--color-text-muted)", lineHeight: 1.4, maxHeight: "2.8em", minWidth: 160, overflow: "hidden" }}
+                          >
+                            {p.description}
+                          </div>
+                        )}
+                      </td>
+                      <td>{p.district}</td>
+                      <td>{p.area}</td>
+                      <td>{p.price.toLocaleString("tr-TR")} ₺</td>
+                      <td>{p.ownerName}</td>
+                      <td>{p.status}</td>
+                      <td style={{ whiteSpace: "nowrap" }}>
+                        <button onClick={() => setExpandedId(isExpanded ? null : p.id)} style={{ marginRight: 6 }}>
+                          {isExpanded ? "Gizle" : "Detay"}
+                        </button>
+                        <button onClick={() => startEdit(p)} style={{ marginRight: 6 }}>Düzenle</button>
+                        <button onClick={() => toggleActive(p)} style={{ marginRight: 6 }}>
+                          {p.status === "PASIF" ? "Aktif Et" : "Pasife Çek"}
+                        </button>
+                        <button onClick={() => deleteProperty(p.id)}>Sil</button>
+                      </td>
+                    </>
+                  )}
+                </tr>
+
+                {isEditing && (
+                  <tr style={{ background: "#faf8f2" }}>
+                    <td colSpan={7}>
+                      <div className="form-grid" style={{ marginBottom: 8 }}>
+                        <input placeholder="İlan No" value={editForm.listingNumber} onChange={(e) => setEditForm({ ...editForm, listingNumber: e.target.value })} />
+                        <input placeholder="Sahibi Tel" value={editForm.ownerPhone} onChange={(e) => setEditForm({ ...editForm, ownerPhone: e.target.value })} />
+                        <select value={editForm.leadId} onChange={(e) => setEditForm({ ...editForm, leadId: e.target.value })}>
+                          <option value="">Lead yok</option>
+                          {leads.map((l) => (
+                            <option key={l.id} value={l.id}>{l.name} — {l.phone}</option>
+                          ))}
+                        </select>
+                      </div>
                       <textarea
                         placeholder="Açıklama"
                         value={editForm.description}
@@ -220,39 +253,23 @@ export default function PropertiesPage() {
                         style={{ width: "100%" }}
                       />
                     </td>
-                    <td style={{ whiteSpace: "nowrap" }}>
-                      <button onClick={() => saveEdit(p.id)} style={{ marginRight: 6 }}>Kaydet</button>
-                      <button onClick={cancelEdit}>Vazgeç</button>
-                    </td>
-                  </>
-                ) : (
-                  <>
-                    <td>
-                      {p.title}
-                      {p.description && (
-                        <div style={{ fontSize: 12, color: "var(--color-text-muted)" }}>{p.description}</div>
-                      )}
-                    </td>
-                    <td>{p.listingNumber || "-"}</td>
-                    <td>{p.district}</td>
-                    <td>{p.area}</td>
-                    <td>{p.price.toLocaleString("tr-TR")} ₺</td>
-                    <td>{p.ownerName}</td>
-                    <td>{p.ownerPhone}</td>
-                    <td>{p.lead ? p.lead.name : "-"}</td>
-                    <td>{p.status}</td>
-                    <td>{new Date(p.createdAt).toLocaleDateString("tr-TR")}</td>
-                    <td>{p.listingAgent?.name}</td>
-                    <td style={{ whiteSpace: "nowrap" }}>
-                      <button onClick={() => startEdit(p)} style={{ marginRight: 6 }}>Düzenle</button>
-                      <button onClick={() => toggleActive(p)} style={{ marginRight: 6 }}>
-                        {p.status === "PASIF" ? "Aktif Et" : "Pasife Çek"}
-                      </button>
-                      <button onClick={() => deleteProperty(p.id)}>Sil</button>
-                    </td>
-                  </>
+                  </tr>
                 )}
-              </tr>
+
+                {!isEditing && isExpanded && (
+                  <tr>
+                    <td colSpan={7} style={{ background: "#faf8f2" }}>
+                      <div className="form-grid">
+                        <div><strong>İlan No:</strong> {p.listingNumber || "-"}</div>
+                        <div><strong>Sahibi Tel:</strong> {p.ownerPhone}</div>
+                        <div><strong>Lead:</strong> {p.lead ? p.lead.name : "-"}</div>
+                        <div><strong>Eklenme Tarihi:</strong> {new Date(p.createdAt).toLocaleDateString("tr-TR")}</div>
+                        <div><strong>İlan sahibi (danışman):</strong> {p.listingAgent?.name}</div>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </Fragment>
             );
           })}
         </tbody>
