@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { showToast } from "../components/toast";
 import LeadPicker from "../components/LeadPicker";
 
@@ -9,6 +9,13 @@ const MULK_TIPI_LABELS: Record<string, string> = {
   OFIS: "Ofis",
   IS_HANI: "İş Hanı",
   DEPO: "Depo",
+};
+
+const INTERACTION_TYPE_LABELS: Record<string, string> = {
+  arama: "Arama",
+  mesaj: "Mesaj",
+  gosterim: "Gösterim",
+  not: "Not",
 };
 
 const SONUC_LABELS: Record<string, string> = {
@@ -49,6 +56,10 @@ export default function TaleplerPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<any>({});
   const [loading, setLoading] = useState(true);
+  const [historyOpenId, setHistoryOpenId] = useState<string | null>(null);
+  const [interactionsByTalep, setInteractionsByTalep] = useState<Record<string, any[]>>({});
+  const [historyLoading, setHistoryLoading] = useState<Record<string, boolean>>({});
+  const [newInteraction, setNewInteraction] = useState({ type: "arama", content: "" });
 
   function load() {
     fetch("/api/talepler")
@@ -111,6 +122,39 @@ export default function TaleplerPage() {
       return;
     }
     showToast("Bugün temas kuruldu olarak işaretlendi.");
+    load();
+  }
+
+  function toggleHistory(talepId: string) {
+    if (historyOpenId === talepId) {
+      setHistoryOpenId(null);
+      return;
+    }
+    setHistoryOpenId(talepId);
+    setNewInteraction({ type: "arama", content: "" });
+    if (!interactionsByTalep[talepId]) {
+      setHistoryLoading((h) => ({ ...h, [talepId]: true }));
+      fetch(`/api/interactions?talepId=${talepId}`)
+        .then((r) => r.json())
+        .then((data) => setInteractionsByTalep((m) => ({ ...m, [talepId]: Array.isArray(data) ? data : [] })))
+        .finally(() => setHistoryLoading((h) => ({ ...h, [talepId]: false })));
+    }
+  }
+
+  async function addInteraction(talepId: string, e: React.FormEvent) {
+    e.preventDefault();
+    const res = await fetch("/api/interactions", {
+      method: "POST",
+      body: JSON.stringify({ talepId, type: newInteraction.type, content: newInteraction.content }),
+    });
+    if (!res.ok) {
+      showToast("Kayıt eklenemedi.", "error");
+      return;
+    }
+    const created = await res.json();
+    showToast("Temas kaydedildi.");
+    setInteractionsByTalep((m) => ({ ...m, [talepId]: [created, ...(m[talepId] || [])] }));
+    setNewInteraction({ type: "arama", content: "" });
     load();
   }
 
@@ -285,8 +329,10 @@ export default function TaleplerPage() {
           )}
           {sortedTalepler.map((t) => {
             const isEditing = editingId === t.id;
+            const historyOpen = historyOpenId === t.id;
             return (
-              <tr key={t.id} style={{ opacity: t.sonuc === "VAZGECTI" ? 0.5 : 1 }}>
+              <Fragment key={t.id}>
+              <tr style={{ opacity: t.sonuc === "VAZGECTI" ? 0.5 : 1 }}>
                 {isEditing ? (
                   <>
                     <td>
@@ -389,11 +435,63 @@ export default function TaleplerPage() {
                     </td>
                     <td style={{ whiteSpace: "nowrap" }}>
                       <button onClick={() => startEdit(t)} style={{ marginRight: 6 }}>Düzenle</button>
+                      <button onClick={() => toggleHistory(t.id)} style={{ marginRight: 6 }}>
+                        {historyOpen ? "Geçmişi Gizle" : "Geçmiş"}
+                      </button>
                       <button onClick={() => deleteTalep(t.id)}>Sil</button>
                     </td>
                   </>
                 )}
               </tr>
+              {historyOpen && !isEditing && (
+                <tr>
+                  <td colSpan={11} style={{ background: "#faf8f2", padding: 14 }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                      <div className="form-section-label">Temas Geçmişi</div>
+
+                      {historyLoading[t.id] && <div className="loading-text">Yükleniyor...</div>}
+                      {!historyLoading[t.id] && (interactionsByTalep[t.id] || []).length === 0 && (
+                        <div style={{ fontSize: 13, color: "var(--color-text-muted)" }}>Henüz kayıt yok.</div>
+                      )}
+                      {!historyLoading[t.id] &&
+                        (interactionsByTalep[t.id] || []).map((i) => (
+                          <div key={i.id} style={{ fontSize: 13, borderBottom: "1px solid var(--color-border)", paddingBottom: 8 }}>
+                            <div>
+                              <strong>{INTERACTION_TYPE_LABELS[i.type] || i.type}</strong>
+                              <span style={{ color: "var(--color-text-muted)", marginLeft: 8 }}>
+                                {new Date(i.createdAt).toLocaleString("tr-TR")} — {i.user?.name}
+                              </span>
+                            </div>
+                            <div>{i.content}</div>
+                          </div>
+                        ))}
+
+                      <form
+                        onSubmit={(e) => addInteraction(t.id, e)}
+                        style={{ display: "flex", gap: 8, alignItems: "flex-start", marginTop: 4, flexWrap: "wrap" }}
+                      >
+                        <select
+                          value={newInteraction.type}
+                          onChange={(e) => setNewInteraction({ ...newInteraction, type: e.target.value })}
+                        >
+                          {Object.entries(INTERACTION_TYPE_LABELS).map(([k, v]) => (
+                            <option key={k} value={k}>{v}</option>
+                          ))}
+                        </select>
+                        <input
+                          placeholder="Ne konuşuldu / not..."
+                          value={newInteraction.content}
+                          onChange={(e) => setNewInteraction({ ...newInteraction, content: e.target.value })}
+                          style={{ flex: 1, minWidth: 200 }}
+                          required
+                        />
+                        <button type="submit">Ekle</button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+              )}
+              </Fragment>
             );
           })}
         </tbody>
