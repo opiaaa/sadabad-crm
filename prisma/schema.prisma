@@ -128,6 +128,7 @@ model Property {
   listingNumber String?
   address       String
   district      String         // mahalle/bölge — eşleştirme için
+  roomCount     String?        // oda sayısı, örn. "2+1"
   area          Float          // m2
   price         Int
   listingType   ListingType

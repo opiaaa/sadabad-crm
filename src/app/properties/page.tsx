@@ -10,6 +10,7 @@ export default function PropertiesPage() {
     listingNumber: "",
     address: "",
     district: "",
+    roomCount: "",
     area: "",
     price: "",
     listingType: "SATILIK",
@@ -22,18 +23,44 @@ export default function PropertiesPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<any>({});
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const PAGE_SIZE = 20;
 
   function load() {
-    fetch("/api/properties")
+    // Arama yapılırken tüm veri (Türkçe-güvenli client-side filtreleme için) çekilir;
+    // arama boşken performans için sayfalı istek atılır.
+    const hasSearch = search.trim().length > 0;
+    const url = hasSearch ? "/api/properties" : `/api/properties?page=${page}&pageSize=${PAGE_SIZE}`;
+    fetch(url)
       .then((r) => r.json())
-      .then((data) => setProperties(Array.isArray(data) ? data : []));
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setProperties(data);
+          setTotalCount(data.length);
+        } else {
+          setProperties(Array.isArray(data.data) ? data.data : []);
+          setTotalCount(data.total || 0);
+        }
+      });
   }
+
   useEffect(() => {
-    load();
     fetch("/api/leads")
       .then((r) => r.json())
       .then((data) => setLeads(Array.isArray(data) ? data : []));
   }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(load, search ? 300 : 0);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, search]);
+
+  function handleSearchChange(value: string) {
+    setSearch(value);
+    setPage(1);
+  }
 
   function selectLeadForForm(leadId: string) {
     const selectedLead = leads.find((l) => l.id === leadId);
@@ -56,7 +83,7 @@ export default function PropertiesPage() {
         leadId: form.leadId || undefined,
       }),
     });
-    setForm({ ...form, title: "", listingNumber: "", address: "", district: "", area: "", price: "", ownerName: "", ownerPhone: "", description: "", leadId: "" });
+    setForm({ ...form, title: "", listingNumber: "", address: "", district: "", roomCount: "", area: "", price: "", ownerName: "", ownerPhone: "", description: "", leadId: "" });
     load();
   }
 
@@ -67,6 +94,7 @@ export default function PropertiesPage() {
       listingNumber: p.listingNumber || "",
       address: p.address,
       district: p.district,
+      roomCount: p.roomCount || "",
       area: String(p.area),
       price: String(p.price),
       ownerName: p.ownerName,
@@ -135,6 +163,7 @@ export default function PropertiesPage() {
         <input placeholder="İlan No" value={form.listingNumber} onChange={(e) => setForm({ ...form, listingNumber: e.target.value })} style={{ width: 110 }} />
         <input placeholder="Adres" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} required />
         <input placeholder="Bölge/Mahalle" value={form.district} onChange={(e) => setForm({ ...form, district: e.target.value })} required />
+        <input placeholder="Oda Sayısı (örn. 2+1)" value={form.roomCount} onChange={(e) => setForm({ ...form, roomCount: e.target.value })} style={{ width: 130 }} />
         <input placeholder="m²" value={form.area} onChange={(e) => setForm({ ...form, area: e.target.value })} required />
         <input placeholder="Fiyat" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} required />
         <input placeholder="Sahibi" value={form.ownerName} onChange={(e) => setForm({ ...form, ownerName: e.target.value })} required />
@@ -151,7 +180,7 @@ export default function PropertiesPage() {
       <input
         placeholder="Başlık, ilan no, bölge, sahibi veya telefonda ara..."
         value={search}
-        onChange={(e) => setSearch(e.target.value)}
+        onChange={(e) => handleSearchChange(e.target.value)}
         style={{ width: "100%", marginBottom: 12 }}
       />
 
@@ -160,6 +189,7 @@ export default function PropertiesPage() {
           <tr style={{ textAlign: "left" }}>
             <th>Başlık</th>
             <th>Bölge</th>
+            <th>Oda Sayısı</th>
             <th>m²</th>
             <th>Fiyat</th>
             <th>Sahibi</th>
@@ -170,7 +200,7 @@ export default function PropertiesPage() {
         <tbody>
           {sortedProperties.length === 0 && (
             <tr>
-              <td colSpan={7}>Eşleşen ilan yok.</td>
+              <td colSpan={8}>Eşleşen ilan yok.</td>
             </tr>
           )}
           {sortedProperties.map((p) => {
@@ -186,6 +216,9 @@ export default function PropertiesPage() {
                       </td>
                       <td>
                         <input value={editForm.district} onChange={(e) => setEditForm({ ...editForm, district: e.target.value })} style={{ width: "100%" }} />
+                      </td>
+                      <td>
+                        <input value={editForm.roomCount} onChange={(e) => setEditForm({ ...editForm, roomCount: e.target.value })} style={{ width: "100%" }} />
                       </td>
                       <td>
                         <input value={editForm.area} onChange={(e) => setEditForm({ ...editForm, area: e.target.value })} style={{ width: 60 }} />
@@ -215,6 +248,7 @@ export default function PropertiesPage() {
                         )}
                       </td>
                       <td>{p.district}</td>
+                      <td>{p.roomCount || "-"}</td>
                       <td>{p.area}</td>
                       <td>{p.price.toLocaleString("tr-TR")} ₺</td>
                       <td>{p.ownerName}</td>
@@ -235,7 +269,7 @@ export default function PropertiesPage() {
 
                 {isEditing && (
                   <tr style={{ background: "#faf8f2" }}>
-                    <td colSpan={7}>
+                    <td colSpan={8}>
                       <div className="form-grid" style={{ marginBottom: 8 }}>
                         <input placeholder="İlan No" value={editForm.listingNumber} onChange={(e) => setEditForm({ ...editForm, listingNumber: e.target.value })} />
                         <input placeholder="Sahibi Tel" value={editForm.ownerPhone} onChange={(e) => setEditForm({ ...editForm, ownerPhone: e.target.value })} />
@@ -258,7 +292,7 @@ export default function PropertiesPage() {
 
                 {!isEditing && isExpanded && (
                   <tr>
-                    <td colSpan={7} style={{ background: "#faf8f2" }}>
+                    <td colSpan={8} style={{ background: "#faf8f2" }}>
                       <div className="form-grid">
                         <div><strong>İlan No:</strong> {p.listingNumber || "-"}</div>
                         <div><strong>Sahibi Tel:</strong> {p.ownerPhone}</div>
@@ -274,6 +308,16 @@ export default function PropertiesPage() {
           })}
         </tbody>
       </table>
+
+      {!search.trim() && totalCount > PAGE_SIZE && (
+        <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 12, marginTop: 16 }}>
+          <button disabled={page === 1} onClick={() => setPage((p) => p - 1)}>← Önceki</button>
+          <span style={{ fontSize: 14, color: "var(--color-text-muted)" }}>
+            Sayfa {page} / {Math.ceil(totalCount / PAGE_SIZE)} ({totalCount} kayıt)
+          </span>
+          <button disabled={page >= Math.ceil(totalCount / PAGE_SIZE)} onClick={() => setPage((p) => p + 1)}>Sonraki →</button>
+        </div>
+      )}
     </div>
   );
 }
