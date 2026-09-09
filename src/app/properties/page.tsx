@@ -1,5 +1,7 @@
 "use client";
 import { Fragment, useEffect, useState } from "react";
+import { showToast } from "../components/toast";
+import LeadPicker from "../components/LeadPicker";
 
 export default function PropertiesPage() {
   const [properties, setProperties] = useState<any[]>([]);
@@ -25,6 +27,7 @@ export default function PropertiesPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
+  const [loading, setLoading] = useState(true);
   const PAGE_SIZE = 20;
 
   function load() {
@@ -42,7 +45,8 @@ export default function PropertiesPage() {
           setProperties(Array.isArray(data.data) ? data.data : []);
           setTotalCount(data.total || 0);
         }
-      });
+      })
+      .finally(() => setLoading(false));
   }
 
   useEffect(() => {
@@ -74,7 +78,7 @@ export default function PropertiesPage() {
 
   async function addProperty(e: React.FormEvent) {
     e.preventDefault();
-    await fetch("/api/properties", {
+    const res = await fetch("/api/properties", {
       method: "POST",
       body: JSON.stringify({
         ...form,
@@ -83,6 +87,11 @@ export default function PropertiesPage() {
         leadId: form.leadId || undefined,
       }),
     });
+    if (!res.ok) {
+      showToast("İlan eklenirken hata oluştu.", "error");
+      return;
+    }
+    showToast("İlan eklendi.");
     setForm({ ...form, title: "", listingNumber: "", address: "", district: "", roomCount: "", area: "", price: "", ownerName: "", ownerPhone: "", description: "", leadId: "" });
     load();
   }
@@ -110,7 +119,7 @@ export default function PropertiesPage() {
   }
 
   async function saveEdit(id: string) {
-    await fetch(`/api/properties/${id}`, {
+    const res = await fetch(`/api/properties/${id}`, {
       method: "PATCH",
       body: JSON.stringify({
         ...editForm,
@@ -119,6 +128,11 @@ export default function PropertiesPage() {
         leadId: editForm.leadId || null,
       }),
     });
+    if (!res.ok) {
+      showToast("Değişiklikler kaydedilemedi.", "error");
+      return;
+    }
+    showToast("Değişiklikler kaydedildi.");
     setEditingId(null);
     setEditForm({});
     load();
@@ -126,13 +140,23 @@ export default function PropertiesPage() {
 
   async function toggleActive(p: any) {
     const nextStatus = p.status === "PASIF" ? "AKTIF" : "PASIF";
-    await fetch(`/api/properties/${p.id}`, { method: "PATCH", body: JSON.stringify({ status: nextStatus }) });
+    const res = await fetch(`/api/properties/${p.id}`, { method: "PATCH", body: JSON.stringify({ status: nextStatus }) });
+    if (!res.ok) {
+      showToast("Durum güncellenemedi.", "error");
+      return;
+    }
+    showToast(p.status === "PASIF" ? "İlan aktife çekildi." : "İlan pasife çekildi.");
     load();
   }
 
   async function deleteProperty(id: string) {
     if (!confirm("Bu ilanı silmek istediğinize emin misiniz? Bu işlem geri alınamaz.")) return;
-    await fetch(`/api/properties/${id}`, { method: "DELETE" });
+    const res = await fetch(`/api/properties/${id}`, { method: "DELETE" });
+    if (!res.ok) {
+      showToast("İlan silinemedi.", "error");
+      return;
+    }
+    showToast("İlan silindi.");
     load();
   }
 
@@ -153,12 +177,9 @@ export default function PropertiesPage() {
       <h1>Portföy</h1>
 
       <form onSubmit={addProperty} style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 24 }}>
-        <select value={form.leadId} onChange={(e) => selectLeadForForm(e.target.value)}>
-          <option value="">Lead seç (opsiyonel)</option>
-          {leads.map((l) => (
-            <option key={l.id} value={l.id}>{l.name} — {l.phone}</option>
-          ))}
-        </select>
+        <div style={{ width: 220 }}>
+          <LeadPicker leads={leads} value={form.leadId} onChange={selectLeadForForm} />
+        </div>
         <input placeholder="Başlık" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required />
         <input placeholder="İlan No" value={form.listingNumber} onChange={(e) => setForm({ ...form, listingNumber: e.target.value })} style={{ width: 110 }} />
         <input placeholder="Adres" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} required />
@@ -198,7 +219,12 @@ export default function PropertiesPage() {
           </tr>
         </thead>
         <tbody>
-          {sortedProperties.length === 0 && (
+          {loading && (
+            <tr>
+              <td colSpan={8} className="loading-text">Yükleniyor...</td>
+            </tr>
+          )}
+          {!loading && sortedProperties.length === 0 && (
             <tr>
               <td colSpan={8}>Eşleşen ilan yok.</td>
             </tr>
@@ -273,12 +299,12 @@ export default function PropertiesPage() {
                       <div className="form-grid" style={{ marginBottom: 8 }}>
                         <input placeholder="İlan No" value={editForm.listingNumber} onChange={(e) => setEditForm({ ...editForm, listingNumber: e.target.value })} />
                         <input placeholder="Sahibi Tel" value={editForm.ownerPhone} onChange={(e) => setEditForm({ ...editForm, ownerPhone: e.target.value })} />
-                        <select value={editForm.leadId} onChange={(e) => setEditForm({ ...editForm, leadId: e.target.value })}>
-                          <option value="">Lead yok</option>
-                          {leads.map((l) => (
-                            <option key={l.id} value={l.id}>{l.name} — {l.phone}</option>
-                          ))}
-                        </select>
+                        <LeadPicker
+                          leads={leads}
+                          value={editForm.leadId}
+                          onChange={(leadId) => setEditForm({ ...editForm, leadId })}
+                          placeholder="Lead yok"
+                        />
                       </div>
                       <textarea
                         placeholder="Açıklama"

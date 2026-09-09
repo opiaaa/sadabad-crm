@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { showToast } from "../components/toast";
 
 const STAGES: Record<string, string> = {
   YENI: "Yeni",
@@ -24,27 +25,39 @@ export default function LeadsPage() {
   });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<any>({});
+  const [loading, setLoading] = useState(true);
 
   function load() {
     fetch("/api/leads")
       .then((r) => r.json())
-      .then((data) => setLeads(Array.isArray(data) ? data : []));
+      .then((data) => setLeads(Array.isArray(data) ? data : []))
+      .finally(() => setLoading(false));
   }
   useEffect(load, []);
 
   async function addLead(e: React.FormEvent) {
     e.preventDefault();
     const res = await fetch("/api/leads", { method: "POST", body: JSON.stringify(form) });
+    if (!res.ok) {
+      showToast("Lead eklenirken hata oluştu.", "error");
+      return;
+    }
     const data = await res.json();
     if (data?.duplicateWarning) {
       alert("Bu telefon numarasıyla zaten bir lead kayıtlı.");
     }
+    showToast("Lead eklendi.");
     setForm({ ...form, name: "", phone: "", preferredArea: "", listingNumber: "", description: "" });
     load();
   }
 
   async function changeStage(id: string, stage: string) {
-    await fetch(`/api/leads/${id}`, { method: "PATCH", body: JSON.stringify({ stage }) });
+    const res = await fetch(`/api/leads/${id}`, { method: "PATCH", body: JSON.stringify({ stage }) });
+    if (!res.ok) {
+      showToast("Aşama güncellenemedi.", "error");
+      return;
+    }
+    showToast("Aşama güncellendi.");
     load();
   }
 
@@ -65,20 +78,35 @@ export default function LeadsPage() {
   }
 
   async function saveEdit(id: string) {
-    await fetch(`/api/leads/${id}`, { method: "PATCH", body: JSON.stringify(editForm) });
+    const res = await fetch(`/api/leads/${id}`, { method: "PATCH", body: JSON.stringify(editForm) });
+    if (!res.ok) {
+      showToast("Değişiklikler kaydedilemedi.", "error");
+      return;
+    }
+    showToast("Değişiklikler kaydedildi.");
     setEditingId(null);
     setEditForm({});
     load();
   }
 
   async function toggleActive(l: any) {
-    await fetch(`/api/leads/${l.id}`, { method: "PATCH", body: JSON.stringify({ isActive: !l.isActive }) });
+    const res = await fetch(`/api/leads/${l.id}`, { method: "PATCH", body: JSON.stringify({ isActive: !l.isActive }) });
+    if (!res.ok) {
+      showToast("Durum güncellenemedi.", "error");
+      return;
+    }
+    showToast(l.isActive ? "Lead pasife çekildi." : "Lead aktife çekildi.");
     load();
   }
 
   async function deleteLead(id: string) {
     if (!confirm("Bu lead'i silmek istediğinize emin misiniz? Bu işlem geri alınamaz.")) return;
-    await fetch(`/api/leads/${id}`, { method: "DELETE" });
+    const res = await fetch(`/api/leads/${id}`, { method: "DELETE" });
+    if (!res.ok) {
+      showToast("Lead silinemedi.", "error");
+      return;
+    }
+    showToast("Lead silindi.");
     load();
   }
 
@@ -137,7 +165,12 @@ export default function LeadsPage() {
           </tr>
         </thead>
         <tbody>
-          {filteredLeads.length === 0 && (
+          {loading && (
+            <tr>
+              <td colSpan={8} className="loading-text">Yükleniyor...</td>
+            </tr>
+          )}
+          {!loading && filteredLeads.length === 0 && (
             <tr>
               <td colSpan={8}>Eşleşen lead yok.</td>
             </tr>

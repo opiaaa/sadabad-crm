@@ -1,5 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
+import { showToast } from "../components/toast";
+import LeadPicker from "../components/LeadPicker";
 
 const MULK_TIPI_LABELS: Record<string, string> = {
   DAIRE: "Daire",
@@ -46,11 +48,13 @@ export default function TaleplerPage() {
   });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<any>({});
+  const [loading, setLoading] = useState(true);
 
   function load() {
     fetch("/api/talepler")
       .then((r) => r.json())
-      .then((data) => setTalepler(Array.isArray(data) ? data : []));
+      .then((data) => setTalepler(Array.isArray(data) ? data : []))
+      .finally(() => setLoading(false));
   }
   useEffect(() => {
     load();
@@ -71,7 +75,7 @@ export default function TaleplerPage() {
 
   async function addTalep(e: React.FormEvent) {
     e.preventDefault();
-    await fetch("/api/talepler", {
+    const res = await fetch("/api/talepler", {
       method: "POST",
       body: JSON.stringify({
         ...form,
@@ -81,17 +85,32 @@ export default function TaleplerPage() {
         leadId: form.leadId || undefined,
       }),
     });
+    if (!res.ok) {
+      showToast("Talep eklenirken hata oluştu.", "error");
+      return;
+    }
+    showToast("Talep eklendi.");
     setForm({ ...form, adSoyad: "", phone: "", il: "", ilce: "", mahalle: "", budgetMin: "", budgetMax: "", description: "", leadId: "" });
     load();
   }
 
   async function changeSonuc(id: string, sonuc: string) {
-    await fetch(`/api/talepler/${id}`, { method: "PATCH", body: JSON.stringify({ sonuc }) });
+    const res = await fetch(`/api/talepler/${id}`, { method: "PATCH", body: JSON.stringify({ sonuc }) });
+    if (!res.ok) {
+      showToast("Sonuç güncellenemedi.", "error");
+      return;
+    }
+    showToast("Sonuç güncellendi.");
     load();
   }
 
   async function markContactedToday(id: string) {
-    await fetch(`/api/talepler/${id}`, { method: "PATCH", body: JSON.stringify({ markContacted: true }) });
+    const res = await fetch(`/api/talepler/${id}`, { method: "PATCH", body: JSON.stringify({ markContacted: true }) });
+    if (!res.ok) {
+      showToast("Temas tarihi güncellenemedi.", "error");
+      return;
+    }
+    showToast("Bugün temas kuruldu olarak işaretlendi.");
     load();
   }
 
@@ -119,7 +138,7 @@ export default function TaleplerPage() {
   }
 
   async function saveEdit(id: string) {
-    await fetch(`/api/talepler/${id}`, {
+    const res = await fetch(`/api/talepler/${id}`, {
       method: "PATCH",
       body: JSON.stringify({
         ...editForm,
@@ -129,6 +148,11 @@ export default function TaleplerPage() {
         leadId: editForm.leadId || null,
       }),
     });
+    if (!res.ok) {
+      showToast("Değişiklikler kaydedilemedi.", "error");
+      return;
+    }
+    showToast("Değişiklikler kaydedildi.");
     setEditingId(null);
     setEditForm({});
     load();
@@ -136,7 +160,12 @@ export default function TaleplerPage() {
 
   async function deleteTalep(id: string) {
     if (!confirm("Bu talebi silmek istediğinize emin misiniz? Bu işlem geri alınamaz.")) return;
-    await fetch(`/api/talepler/${id}`, { method: "DELETE" });
+    const res = await fetch(`/api/talepler/${id}`, { method: "DELETE" });
+    if (!res.ok) {
+      showToast("Talep silinemedi.", "error");
+      return;
+    }
+    showToast("Talep silindi.");
     load();
   }
 
@@ -159,12 +188,7 @@ export default function TaleplerPage() {
       <form onSubmit={addTalep} className="card" style={{ marginBottom: 24 }}>
         <div className="form-section">
           <label className="form-section-label">Lead Bağlantısı</label>
-          <select value={form.leadId} onChange={(e) => selectLeadForForm(e.target.value)} style={{ width: "100%" }}>
-            <option value="">Lead seç (opsiyonel)</option>
-            {leads.map((l) => (
-              <option key={l.id} value={l.id}>{l.name} — {l.phone}</option>
-            ))}
-          </select>
+          <LeadPicker leads={leads} value={form.leadId} onChange={selectLeadForForm} />
         </div>
 
         <div className="form-section">
@@ -249,7 +273,12 @@ export default function TaleplerPage() {
           </tr>
         </thead>
         <tbody>
-          {sortedTalepler.length === 0 && (
+          {loading && (
+            <tr>
+              <td colSpan={11} className="loading-text">Yükleniyor...</td>
+            </tr>
+          )}
+          {!loading && sortedTalepler.length === 0 && (
             <tr>
               <td colSpan={11}>Eşleşen talep yok.</td>
             </tr>
@@ -267,12 +296,12 @@ export default function TaleplerPage() {
                       <input value={editForm.phone} onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })} style={{ width: "100%" }} />
                     </td>
                     <td>
-                      <select value={editForm.leadId} onChange={(e) => setEditForm({ ...editForm, leadId: e.target.value })}>
-                        <option value="">Lead yok</option>
-                        {leads.map((l) => (
-                          <option key={l.id} value={l.id}>{l.name} — {l.phone}</option>
-                        ))}
-                      </select>
+                      <LeadPicker
+                        leads={leads}
+                        value={editForm.leadId}
+                        onChange={(leadId) => setEditForm({ ...editForm, leadId })}
+                        placeholder="Lead yok"
+                      />
                     </td>
                     <td>
                       <select value={editForm.listingType} onChange={(e) => setEditForm({ ...editForm, listingType: e.target.value })}>

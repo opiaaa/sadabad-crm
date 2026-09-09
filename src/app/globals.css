@@ -220,3 +220,93 @@ tbody td {
 tbody tr:hover {
   background: #faf8f2;
 }
+
+/* ---- Yükleniyor durumu ---- */
+.loading-text {
+  padding: 16px;
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: 14px;
+}
+
+/* ---- Toast bildirimleri ---- */
+.toast-container {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.toast {
+  padding: 12px 18px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(26, 35, 50, 0.25);
+  animation: toast-in 0.2s ease-out;
+  max-width: 320px;
+}
+.toast-success {
+  background: var(--color-primary);
+  border-left: 4px solid var(--color-accent);
+}
+.toast-error {
+  background: #b91c1c;
+  border-left: 4px solid #7f1d1d;
+}
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ---- Lead seçici (aranabilir) ---- */
+.lead-picker {
+  position: relative;
+}
+.lead-picker-dropdown {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 0;
+  right: 0;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  box-shadow: 0 4px 14px rgba(26, 35, 50, 0.15);
+  max-height: 220px;
+  overflow-y: auto;
+  z-index: 20;
+}
+.lead-picker-option {
+  padding: 8px 10px;
+  font-size: 14px;
+  cursor: pointer;
+}
+.lead-picker-option:hover {
+  background: #faf8f2;
+}
+.lead-picker-selected {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  padding: 6px 6px 6px 10px;
+  font-size: 14px;
+  background: var(--color-surface);
+}
+.lead-picker-selected button {
+  background: transparent;
+  color: var(--color-text-muted);
+  border: none;
+  padding: 0 6px;
+  font-size: 16px;
+  line-height: 1;
+}
+.lead-picker-selected button:hover {
+  background: transparent;
+  color: #b91c1c;
+}

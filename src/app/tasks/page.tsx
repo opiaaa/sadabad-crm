@@ -1,15 +1,19 @@
 "use client";
 import { useEffect, useState } from "react";
+import { showToast } from "../components/toast";
+import LeadPicker from "../components/LeadPicker";
 
 export default function TasksPage() {
   const [tasks, setTasks] = useState<any[]>([]);
   const [leads, setLeads] = useState<any[]>([]);
   const [form, setForm] = useState({ title: "", description: "", dueDate: "", leadId: "" });
+  const [loading, setLoading] = useState(true);
 
   function load() {
     fetch("/api/tasks")
       .then((r) => r.json())
-      .then((data) => setTasks(Array.isArray(data) ? data : []));
+      .then((data) => setTasks(Array.isArray(data) ? data : []))
+      .finally(() => setLoading(false));
   }
   useEffect(() => {
     load();
@@ -18,7 +22,7 @@ export default function TasksPage() {
 
   async function addTask(e: React.FormEvent) {
     e.preventDefault();
-    await fetch("/api/tasks", {
+    const res = await fetch("/api/tasks", {
       method: "POST",
       body: JSON.stringify({
         title: form.title,
@@ -27,23 +31,43 @@ export default function TasksPage() {
         leadId: form.leadId || undefined,
       }),
     });
+    if (!res.ok) {
+      showToast("Görev eklenirken hata oluştu.", "error");
+      return;
+    }
+    showToast("Görev eklendi.");
     setForm({ title: "", description: "", dueDate: "", leadId: "" });
     load();
   }
 
   async function completeTask(id: string) {
-    await fetch(`/api/tasks/${id}`, { method: "PATCH", body: JSON.stringify({ status: "TAMAMLANDI" }) });
+    const res = await fetch(`/api/tasks/${id}`, { method: "PATCH", body: JSON.stringify({ status: "TAMAMLANDI" }) });
+    if (!res.ok) {
+      showToast("Görev güncellenemedi.", "error");
+      return;
+    }
+    showToast("Görev tamamlandı olarak işaretlendi.");
     load();
   }
 
   async function cancelTask(id: string) {
-    await fetch(`/api/tasks/${id}`, { method: "PATCH", body: JSON.stringify({ status: "IPTAL" }) });
+    const res = await fetch(`/api/tasks/${id}`, { method: "PATCH", body: JSON.stringify({ status: "IPTAL" }) });
+    if (!res.ok) {
+      showToast("Görev güncellenemedi.", "error");
+      return;
+    }
+    showToast("Görev iptal edildi.");
     load();
   }
 
   async function deleteTask(id: string) {
     if (!confirm("Bu görevi silmek istediğinize emin misiniz? Bu işlem geri alınamaz.")) return;
-    await fetch(`/api/tasks/${id}`, { method: "DELETE" });
+    const res = await fetch(`/api/tasks/${id}`, { method: "DELETE" });
+    if (!res.ok) {
+      showToast("Görev silinemedi.", "error");
+      return;
+    }
+    showToast("Görev silindi.");
     load();
   }
 
@@ -54,12 +78,9 @@ export default function TasksPage() {
       <form onSubmit={addTask} style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 24 }}>
         <input placeholder="Başlık" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required />
         <input type="date" value={form.dueDate} onChange={(e) => setForm({ ...form, dueDate: e.target.value })} required />
-        <select value={form.leadId} onChange={(e) => setForm({ ...form, leadId: e.target.value })}>
-          <option value="">Lead seç (opsiyonel)</option>
-          {leads.map((l) => (
-            <option key={l.id} value={l.id}>{l.name} — {l.phone}</option>
-          ))}
-        </select>
+        <div style={{ width: 220 }}>
+          <LeadPicker leads={leads} value={form.leadId} onChange={(leadId) => setForm({ ...form, leadId })} />
+        </div>
         <textarea
           placeholder="Açıklama (opsiyonel)"
           value={form.description}
@@ -80,7 +101,12 @@ export default function TasksPage() {
           </tr>
         </thead>
         <tbody>
-          {tasks.length === 0 && (
+          {loading && (
+            <tr>
+              <td colSpan={5} className="loading-text">Yükleniyor...</td>
+            </tr>
+          )}
+          {!loading && tasks.length === 0 && (
             <tr>
               <td colSpan={5}>Bekleyen görev yok.</td>
             </tr>
